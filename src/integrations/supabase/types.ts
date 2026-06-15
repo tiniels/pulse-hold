@@ -14,7 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      concurso_publico: {
+        Row: {
+          cargo: string
+          created_at: string
+          data_homologacao: string | null
+          desistencias_renuncias: number | null
+          homologacao_status: string | null
+          id: string
+          memo: string | null
+          numero: string | null
+          pedidos_abertos: number | null
+          pedidos_andamento: number | null
+          prorrogacao: string | null
+          prova_pratica: string | null
+          qtd_aprovados: number | null
+          qtd_atendida: number | null
+          regularizar: string | null
+          total_disponivel: number
+          updated_at: string
+          vencimento: string | null
+        }
+        Insert: {
+          cargo: string
+          created_at?: string
+          data_homologacao?: string | null
+          desistencias_renuncias?: number | null
+          homologacao_status?: string | null
+          id?: string
+          memo?: string | null
+          numero?: string | null
+          pedidos_abertos?: number | null
+          pedidos_andamento?: number | null
+          prorrogacao?: string | null
+          prova_pratica?: string | null
+          qtd_aprovados?: number | null
+          qtd_atendida?: number | null
+          regularizar?: string | null
+          total_disponivel?: number
+          updated_at?: string
+          vencimento?: string | null
+        }
+        Update: {
+          cargo?: string
+          created_at?: string
+          data_homologacao?: string | null
+          desistencias_renuncias?: number | null
+          homologacao_status?: string | null
+          id?: string
+          memo?: string | null
+          numero?: string | null
+          pedidos_abertos?: number | null
+          pedidos_andamento?: number | null
+          prorrogacao?: string | null
+          prova_pratica?: string | null
+          qtd_aprovados?: number | null
+          qtd_atendida?: number | null
+          regularizar?: string | null
+          total_disponivel?: number
+          updated_at?: string
+          vencimento?: string | null
+        }
+        Relationships: []
+      }
+      processo_seletivo: {
+        Row: {
+          cargo: string
+          created_at: string
+          data_homologacao: string | null
+          desistencias_renuncias: number | null
+          homologacao_status: string | null
+          id: string
+          memo: string | null
+          numero: string | null
+          pedidos_abertos: number | null
+          pedidos_andamento: number | null
+          prorrogacao: string | null
+          qtd_aprovados: number | null
+          qtd_atendida: number | null
+          total_disponivel: number
+          updated_at: string
+          vencimento: string | null
+        }
+        Insert: {
+          cargo: string
+          created_at?: string
+          data_homologacao?: string | null
+          desistencias_renuncias?: number | null
+          homologacao_status?: string | null
+          id?: string
+          memo?: string | null
+          numero?: string | null
+          pedidos_abertos?: number | null
+          pedidos_andamento?: number | null
+          prorrogacao?: string | null
+          qtd_aprovados?: number | null
+          qtd_atendida?: number | null
+          total_disponivel?: number
+          updated_at?: string
+          vencimento?: string | null
+        }
+        Update: {
+          cargo?: string
+          created_at?: string
+          data_homologacao?: string | null
+          desistencias_renuncias?: number | null
+          homologacao_status?: string | null
+          id?: string
+          memo?: string | null
+          numero?: string | null
+          pedidos_abertos?: number | null
+          pedidos_andamento?: number | null
+          prorrogacao?: string | null
+          qtd_aprovados?: number | null
+          qtd_atendida?: number | null
+          total_disponivel?: number
+          updated_at?: string
+          vencimento?: string | null
+        }
+        Relationships: []
+      }
+      vencimentos: {
+        Row: {
+          cargo: string
+          created_at: string
+          data_alvo: string | null
+          data_homologacao: string | null
+          dias_restantes: number | null
+          id: string
+          numero: string | null
+          prorrogacao: string | null
+          status: string | null
+          tipo: string
+          vencimento_original: string | null
+        }
+        Insert: {
+          cargo: string
+          created_at?: string
+          data_alvo?: string | null
+          data_homologacao?: string | null
+          dias_restantes?: number | null
+          id?: string
+          numero?: string | null
+          prorrogacao?: string | null
+          status?: string | null
+          tipo: string
+          vencimento_original?: string | null
+        }
+        Update: {
+          cargo?: string
+          created_at?: string
+          data_alvo?: string | null
+          data_homologacao?: string | null
+          dias_restantes?: number | null
+          id?: string
+          numero?: string | null
+          prorrogacao?: string | null
+          status?: string | null
+          tipo?: string
+          vencimento_original?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
