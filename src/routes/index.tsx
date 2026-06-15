@@ -428,7 +428,9 @@ function Index() {
                         <TableRow key={v.id}>
                           <TableCell>{statusBadge(v.status)}</TableCell>
                           <TableCell><Badge variant="outline">{v.tipo}</Badge></TableCell>
-                          <TableCell className="font-medium">{v.cargo}</TableCell>
+                          <TableCell className="font-medium">
+                            <button onClick={() => openFila(v.cargo)} className="text-left hover:underline text-primary">{v.cargo}</button>
+                          </TableCell>
                           <TableCell>
                             <NumeroLink
                               tipo={v.tipo === "CP" ? "cp" : "ps"}
@@ -474,7 +476,9 @@ function Index() {
                     <TableBody>
                       {filteredCP.map(r => (
                         <TableRow key={r.id}>
-                          <TableCell className="font-medium">{r.cargo}</TableCell>
+                          <TableCell className="font-medium">
+                            <button onClick={() => openFila(r.cargo)} className="text-left hover:underline text-primary">{r.cargo}</button>
+                          </TableCell>
                           <TableCell><NumeroLink tipo="cp" numero={r.numero} /></TableCell>
                           <TableCell>{statusBadge(r.homologacao_status)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.qtd_aprovados ?? "—"}</TableCell>
@@ -520,7 +524,9 @@ function Index() {
                     <TableBody>
                       {filteredPS.map(r => (
                         <TableRow key={r.id}>
-                          <TableCell className="font-medium">{r.cargo}</TableCell>
+                          <TableCell className="font-medium">
+                            <button onClick={() => openFila(r.cargo)} className="text-left hover:underline text-primary">{r.cargo}</button>
+                          </TableCell>
                           <TableCell><NumeroLink tipo="ps" numero={r.numero} /></TableCell>
                           <TableCell>{statusBadge(r.homologacao_status)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.qtd_aprovados ?? "—"}</TableCell>
