@@ -479,6 +479,50 @@ function Index() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
+        <DialogContent className="max-w-6xl p-0 gap-0 sm:rounded-lg overflow-hidden">
+          <DialogHeader className="flex flex-row items-center justify-between gap-4 border-b px-5 py-3 space-y-0">
+            <DialogTitle className="text-base">
+              Edital {pdfNumero}{" "}
+              <Badge variant="outline" className="ml-2">
+                {pdfTipo === "cp" ? "Concurso Público" : "Processo Seletivo"}
+              </Badge>
+            </DialogTitle>
+            <div className="flex items-center gap-2 pr-8">
+              <Button variant="outline" size="sm" asChild>
+                <a href={pdfNumero ? editalUrl(pdfTipo, pdfNumero, true) : "#"} download>
+                  <Download className="mr-1.5 h-4 w-4" /> Baixar
+                </a>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={pdfNumero ? editalUrl(pdfTipo, pdfNumero) : "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <ExternalLink className="mr-1.5 h-4 w-4" /> Nova aba
+                </a>
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="h-[80vh] w-full bg-muted">
+            {pdfNumero ? (
+              <iframe
+                key={`${pdfTipo}-${pdfNumero}`}
+                title={`Edital ${pdfNumero}`}
+                src={`${editalUrl(pdfTipo, pdfNumero)}#toolbar=1&navpanes=1&view=FitH`}
+                className="h-full w-full"
+              />
+            ) : null}
+          </div>
+          <div className="border-t px-5 py-2 text-xs text-muted-foreground">
+            Use <kbd className="rounded border bg-background px-1">Ctrl</kbd>+
+            <kbd className="rounded border bg-background px-1">F</kbd> dentro do PDF para pesquisar
+            palavras · setas para navegar entre páginas e resultados.
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
