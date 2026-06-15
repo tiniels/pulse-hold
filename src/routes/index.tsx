@@ -118,6 +118,9 @@ function Index() {
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfTipo, setPdfTipo] = useState<"cp" | "ps">("cp");
   const [pdfNumero, setPdfNumero] = useState<string>("");
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   function openEdital(tipo: "cp" | "ps", numero: string | null | undefined) {
     if (!numero) return;
@@ -129,6 +132,57 @@ function Index() {
   function editalUrl(tipo: "cp" | "ps", numero: string, download = false) {
     const safe = encodeURIComponent(numero);
     return `/api/public/edital/${tipo}/${safe}${download ? "?download=1" : ""}`;
+  }
+
+  useEffect(() => {
+    if (!pdfOpen || !pdfNumero) return;
+    let cancelled = false;
+    let createdUrl: string | null = null;
+    setPdfLoading(true);
+    setPdfError(null);
+    setPdfBlobUrl(null);
+    (async () => {
+      try {
+        const res = await fetch(editalUrl(pdfTipo, pdfNumero));
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt || `Erro ${res.status}`);
+        }
+        const blob = await res.blob();
+        const pdfBlob = blob.type === "application/pdf"
+          ? blob
+          : new Blob([blob], { type: "application/pdf" });
+        createdUrl = URL.createObjectURL(pdfBlob);
+        if (!cancelled) setPdfBlobUrl(createdUrl);
+      } catch (e) {
+        if (!cancelled) setPdfError((e as Error).message);
+      } finally {
+        if (!cancelled) setPdfLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [pdfOpen, pdfTipo, pdfNumero]);
+
+  async function downloadEdital() {
+    if (!pdfNumero) return;
+    try {
+      const res = await fetch(editalUrl(pdfTipo, pdfNumero, true));
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `edital_${pdfNumero.replace(/\//g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   function NumeroLink({ tipo, numero }: { tipo: "cp" | "ps"; numero: string | null | undefined }) {
