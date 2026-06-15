@@ -24,6 +24,7 @@ import {
   AlertTriangle, Clock, CheckCircle2, Users, Briefcase, FileWarning,
   TrendingUp, Calendar, FileText, Download, ExternalLink,
 } from "lucide-react";
+import { FilaConvocacaoDialog } from "@/components/FilaConvocacaoDialog";
 
 const dashQuery = queryOptions({
   queryKey: ["dpcab", "dashboard"],
@@ -121,6 +122,13 @@ function Index() {
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [filaOpen, setFilaOpen] = useState(false);
+  const [filaCargo, setFilaCargo] = useState<string | null>(null);
+
+  function openFila(cargo: string) {
+    setFilaCargo(cargo);
+    setFilaOpen(true);
+  }
 
   function openEdital(tipo: "cp" | "ps", numero: string | null | undefined) {
     if (!numero) return;
@@ -420,7 +428,9 @@ function Index() {
                         <TableRow key={v.id}>
                           <TableCell>{statusBadge(v.status)}</TableCell>
                           <TableCell><Badge variant="outline">{v.tipo}</Badge></TableCell>
-                          <TableCell className="font-medium">{v.cargo}</TableCell>
+                          <TableCell className="font-medium">
+                            <button onClick={() => openFila(v.cargo)} className="text-left hover:underline text-primary">{v.cargo}</button>
+                          </TableCell>
                           <TableCell>
                             <NumeroLink
                               tipo={v.tipo === "CP" ? "cp" : "ps"}
@@ -466,7 +476,9 @@ function Index() {
                     <TableBody>
                       {filteredCP.map(r => (
                         <TableRow key={r.id}>
-                          <TableCell className="font-medium">{r.cargo}</TableCell>
+                          <TableCell className="font-medium">
+                            <button onClick={() => openFila(r.cargo)} className="text-left hover:underline text-primary">{r.cargo}</button>
+                          </TableCell>
                           <TableCell><NumeroLink tipo="cp" numero={r.numero} /></TableCell>
                           <TableCell>{statusBadge(r.homologacao_status)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.qtd_aprovados ?? "—"}</TableCell>
@@ -512,7 +524,9 @@ function Index() {
                     <TableBody>
                       {filteredPS.map(r => (
                         <TableRow key={r.id}>
-                          <TableCell className="font-medium">{r.cargo}</TableCell>
+                          <TableCell className="font-medium">
+                            <button onClick={() => openFila(r.cargo)} className="text-left hover:underline text-primary">{r.cargo}</button>
+                          </TableCell>
                           <TableCell><NumeroLink tipo="ps" numero={r.numero} /></TableCell>
                           <TableCell>{statusBadge(r.homologacao_status)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.qtd_aprovados ?? "—"}</TableCell>
@@ -582,6 +596,12 @@ function Index() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <FilaConvocacaoDialog
+        open={filaOpen}
+        onOpenChange={setFilaOpen}
+        cargoNome={filaCargo}
+      />
     </div>
   );
 }

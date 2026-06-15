@@ -14,6 +14,97 @@ export type Database = {
   }
   public: {
     Tables: {
+      candidatos: {
+        Row: {
+          cargo_fila_id: string
+          classificacao: number | null
+          data_convocacao: string | null
+          documento: string | null
+          id: string
+          inscricao: string | null
+          lista_tipo: string
+          nome: string
+          nota: number | null
+          observacao: string | null
+          ordem_linha: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cargo_fila_id: string
+          classificacao?: number | null
+          data_convocacao?: string | null
+          documento?: string | null
+          id?: string
+          inscricao?: string | null
+          lista_tipo?: string
+          nome: string
+          nota?: number | null
+          observacao?: string | null
+          ordem_linha?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cargo_fila_id?: string
+          classificacao?: number | null
+          data_convocacao?: string | null
+          documento?: string | null
+          id?: string
+          inscricao?: string | null
+          lista_tipo?: string
+          nome?: string
+          nota?: number | null
+          observacao?: string | null
+          ordem_linha?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidatos_cargo_fila_id_fkey"
+            columns: ["cargo_fila_id"]
+            isOneToOne: false
+            referencedRelation: "cargos_fila"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargos_fila: {
+        Row: {
+          codigo: string | null
+          concurso_id: string
+          id: string
+          nome_normalizado: string
+          nome_original: string
+          secao: string
+        }
+        Insert: {
+          codigo?: string | null
+          concurso_id: string
+          id?: string
+          nome_normalizado: string
+          nome_original: string
+          secao?: string
+        }
+        Update: {
+          codigo?: string | null
+          concurso_id?: string
+          id?: string
+          nome_normalizado?: string
+          nome_original?: string
+          secao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargos_fila_concurso_id_fkey"
+            columns: ["concurso_id"]
+            isOneToOne: false
+            referencedRelation: "concursos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       concurso_publico: {
         Row: {
           cargo: string
@@ -76,6 +167,89 @@ export type Database = {
           vencimento?: string | null
         }
         Relationships: []
+      }
+      concursos: {
+        Row: {
+          created_at: string
+          data_homologacao: string | null
+          data_realizacao: string | null
+          data_vencimento: string | null
+          id: string
+          nome: string | null
+          numero: string
+          prorrogado_ate: string | null
+          sheet_origem: string | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          data_homologacao?: string | null
+          data_realizacao?: string | null
+          data_vencimento?: string | null
+          id?: string
+          nome?: string | null
+          numero: string
+          prorrogado_ate?: string | null
+          sheet_origem?: string | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          data_homologacao?: string | null
+          data_realizacao?: string | null
+          data_vencimento?: string | null
+          id?: string
+          nome?: string | null
+          numero?: string
+          prorrogado_ate?: string | null
+          sheet_origem?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
+      convocacoes_log: {
+        Row: {
+          acao: string
+          candidato_id: string
+          criado_em: string
+          id: string
+          observacao: string | null
+          status_anterior: string | null
+          status_novo: string | null
+          usuario_email: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          candidato_id: string
+          criado_em?: string
+          id?: string
+          observacao?: string | null
+          status_anterior?: string | null
+          status_novo?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          candidato_id?: string
+          criado_em?: string
+          id?: string
+          observacao?: string | null
+          status_anterior?: string | null
+          status_novo?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convocacoes_log_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       processo_seletivo: {
         Row: {
