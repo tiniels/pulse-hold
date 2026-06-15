@@ -115,6 +115,36 @@ function Index() {
 
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [pdfTipo, setPdfTipo] = useState<"cp" | "ps">("cp");
+  const [pdfNumero, setPdfNumero] = useState<string>("");
+
+  function openEdital(tipo: "cp" | "ps", numero: string | null | undefined) {
+    if (!numero) return;
+    setPdfTipo(tipo);
+    setPdfNumero(numero);
+    setPdfOpen(true);
+  }
+
+  function editalUrl(tipo: "cp" | "ps", numero: string, download = false) {
+    const safe = encodeURIComponent(numero);
+    return `/api/public/edital/${tipo}/${safe}${download ? "?download=1" : ""}`;
+  }
+
+  function NumeroLink({ tipo, numero }: { tipo: "cp" | "ps"; numero: string | null | undefined }) {
+    if (!numero) return <span className="text-muted-foreground">—</span>;
+    return (
+      <button
+        type="button"
+        onClick={() => openEdital(tipo, numero)}
+        className="inline-flex items-center gap-1 text-primary hover:underline focus:outline-none"
+        title={`Abrir edital ${numero}`}
+      >
+        <FileText className="h-3.5 w-3.5" />
+        {numero}
+      </button>
+    );
+  }
 
   const kpis = useMemo(() => {
     const totalCP = cp.reduce((a, r) => a + (r.total_disponivel ?? 0), 0);
