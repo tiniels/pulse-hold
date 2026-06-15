@@ -544,28 +544,33 @@ function Index() {
               </Badge>
             </DialogTitle>
             <div className="flex items-center gap-2 pr-8">
-              <Button variant="outline" size="sm" asChild>
-                <a href={pdfNumero ? editalUrl(pdfTipo, pdfNumero, true) : "#"} download>
-                  <Download className="mr-1.5 h-4 w-4" /> Baixar
-                </a>
+              <Button variant="outline" size="sm" onClick={downloadEdital}>
+                <Download className="mr-1.5 h-4 w-4" /> Baixar
               </Button>
-              <Button variant="outline" size="sm" asChild>
-                <a
-                  href={pdfNumero ? editalUrl(pdfTipo, pdfNumero) : "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <ExternalLink className="mr-1.5 h-4 w-4" /> Nova aba
-                </a>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => pdfBlobUrl && window.open(pdfBlobUrl, "_blank")}
+                disabled={!pdfBlobUrl}
+              >
+                <ExternalLink className="mr-1.5 h-4 w-4" /> Nova aba
               </Button>
             </div>
           </DialogHeader>
           <div className="h-[80vh] w-full bg-muted">
-            {pdfNumero ? (
+            {pdfLoading ? (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                Carregando edital…
+              </div>
+            ) : pdfError ? (
+              <div className="flex h-full items-center justify-center p-6 text-center text-sm text-destructive">
+                Não foi possível carregar o edital: {pdfError}
+              </div>
+            ) : pdfBlobUrl ? (
               <iframe
                 key={`${pdfTipo}-${pdfNumero}`}
                 title={`Edital ${pdfNumero}`}
-                src={`${editalUrl(pdfTipo, pdfNumero)}#toolbar=1&navpanes=1&view=FitH`}
+                src={`${pdfBlobUrl}#toolbar=1&navpanes=1&view=FitH`}
                 className="h-full w-full"
               />
             ) : null}
