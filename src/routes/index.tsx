@@ -367,7 +367,12 @@ function Index() {
                           <TableCell>{statusBadge(v.status)}</TableCell>
                           <TableCell><Badge variant="outline">{v.tipo}</Badge></TableCell>
                           <TableCell className="font-medium">{v.cargo}</TableCell>
-                          <TableCell className="text-muted-foreground">{v.numero ?? "—"}</TableCell>
+                          <TableCell>
+                            <NumeroLink
+                              tipo={v.tipo === "CP" ? "cp" : "ps"}
+                              numero={v.numero}
+                            />
+                          </TableCell>
                           <TableCell>{fmtDate(v.data_homologacao)}</TableCell>
                           <TableCell>{fmtDate(v.vencimento_original)}</TableCell>
                           <TableCell>{fmtDate(v.prorrogacao)}</TableCell>
@@ -408,7 +413,7 @@ function Index() {
                       {filteredCP.map(r => (
                         <TableRow key={r.id}>
                           <TableCell className="font-medium">{r.cargo}</TableCell>
-                          <TableCell className="text-muted-foreground">{r.numero ?? "—"}</TableCell>
+                          <TableCell><NumeroLink tipo="cp" numero={r.numero} /></TableCell>
                           <TableCell>{statusBadge(r.homologacao_status)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.qtd_aprovados ?? "—"}</TableCell>
                           <TableCell className="text-right tabular-nums font-semibold">{r.total_disponivel}</TableCell>
@@ -454,7 +459,7 @@ function Index() {
                       {filteredPS.map(r => (
                         <TableRow key={r.id}>
                           <TableCell className="font-medium">{r.cargo}</TableCell>
-                          <TableCell className="text-muted-foreground">{r.numero ?? "—"}</TableCell>
+                          <TableCell><NumeroLink tipo="ps" numero={r.numero} /></TableCell>
                           <TableCell>{statusBadge(r.homologacao_status)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.qtd_aprovados ?? "—"}</TableCell>
                           <TableCell className="text-right tabular-nums font-semibold">{r.total_disponivel}</TableCell>
