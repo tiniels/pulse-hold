@@ -596,6 +596,12 @@ function Index() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <FilaConvocacaoDialog
+        open={filaOpen}
+        onOpenChange={setFilaOpen}
+        cargoNome={filaCargo}
+      />
     </div>
   );
 }
