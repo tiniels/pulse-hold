@@ -7,6 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
@@ -18,7 +22,7 @@ import {
 } from "recharts";
 import {
   AlertTriangle, Clock, CheckCircle2, Users, Briefcase, FileWarning,
-  TrendingUp, Calendar,
+  TrendingUp, Calendar, FileText, Download, ExternalLink,
 } from "lucide-react";
 
 const dashQuery = queryOptions({
