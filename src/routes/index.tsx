@@ -24,6 +24,7 @@ import {
   AlertTriangle, Clock, CheckCircle2, Users, Briefcase, FileWarning,
   TrendingUp, Calendar, FileText, Download, ExternalLink,
 } from "lucide-react";
+import { FilaConvocacaoDialog } from "@/components/FilaConvocacaoDialog";
 
 const dashQuery = queryOptions({
   queryKey: ["dpcab", "dashboard"],
