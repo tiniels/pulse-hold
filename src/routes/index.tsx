@@ -7,6 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
@@ -18,7 +22,7 @@ import {
 } from "recharts";
 import {
   AlertTriangle, Clock, CheckCircle2, Users, Briefcase, FileWarning,
-  TrendingUp, Calendar,
+  TrendingUp, Calendar, FileText, Download, ExternalLink,
 } from "lucide-react";
 
 const dashQuery = queryOptions({
@@ -111,6 +115,36 @@ function Index() {
 
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [pdfTipo, setPdfTipo] = useState<"cp" | "ps">("cp");
+  const [pdfNumero, setPdfNumero] = useState<string>("");
+
+  function openEdital(tipo: "cp" | "ps", numero: string | null | undefined) {
+    if (!numero) return;
+    setPdfTipo(tipo);
+    setPdfNumero(numero);
+    setPdfOpen(true);
+  }
+
+  function editalUrl(tipo: "cp" | "ps", numero: string, download = false) {
+    const safe = encodeURIComponent(numero);
+    return `/api/public/edital/${tipo}/${safe}${download ? "?download=1" : ""}`;
+  }
+
+  function NumeroLink({ tipo, numero }: { tipo: "cp" | "ps"; numero: string | null | undefined }) {
+    if (!numero) return <span className="text-muted-foreground">—</span>;
+    return (
+      <button
+        type="button"
+        onClick={() => openEdital(tipo, numero)}
+        className="inline-flex items-center gap-1 text-primary hover:underline focus:outline-none"
+        title={`Abrir edital ${numero}`}
+      >
+        <FileText className="h-3.5 w-3.5" />
+        {numero}
+      </button>
+    );
+  }
 
   const kpis = useMemo(() => {
     const totalCP = cp.reduce((a, r) => a + (r.total_disponivel ?? 0), 0);
@@ -333,7 +367,12 @@ function Index() {
                           <TableCell>{statusBadge(v.status)}</TableCell>
                           <TableCell><Badge variant="outline">{v.tipo}</Badge></TableCell>
                           <TableCell className="font-medium">{v.cargo}</TableCell>
-                          <TableCell className="text-muted-foreground">{v.numero ?? "—"}</TableCell>
+                          <TableCell>
+                            <NumeroLink
+                              tipo={v.tipo === "CP" ? "cp" : "ps"}
+                              numero={v.numero}
+                            />
+                          </TableCell>
                           <TableCell>{fmtDate(v.data_homologacao)}</TableCell>
                           <TableCell>{fmtDate(v.vencimento_original)}</TableCell>
                           <TableCell>{fmtDate(v.prorrogacao)}</TableCell>
@@ -374,7 +413,7 @@ function Index() {
                       {filteredCP.map(r => (
                         <TableRow key={r.id}>
                           <TableCell className="font-medium">{r.cargo}</TableCell>
-                          <TableCell className="text-muted-foreground">{r.numero ?? "—"}</TableCell>
+                          <TableCell><NumeroLink tipo="cp" numero={r.numero} /></TableCell>
                           <TableCell>{statusBadge(r.homologacao_status)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.qtd_aprovados ?? "—"}</TableCell>
                           <TableCell className="text-right tabular-nums font-semibold">{r.total_disponivel}</TableCell>
@@ -420,7 +459,7 @@ function Index() {
                       {filteredPS.map(r => (
                         <TableRow key={r.id}>
                           <TableCell className="font-medium">{r.cargo}</TableCell>
-                          <TableCell className="text-muted-foreground">{r.numero ?? "—"}</TableCell>
+                          <TableCell><NumeroLink tipo="ps" numero={r.numero} /></TableCell>
                           <TableCell>{statusBadge(r.homologacao_status)}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.qtd_aprovados ?? "—"}</TableCell>
                           <TableCell className="text-right tabular-nums font-semibold">{r.total_disponivel}</TableCell>
@@ -440,6 +479,50 @@ function Index() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
+        <DialogContent className="max-w-6xl p-0 gap-0 sm:rounded-lg overflow-hidden">
+          <DialogHeader className="flex flex-row items-center justify-between gap-4 border-b px-5 py-3 space-y-0">
+            <DialogTitle className="text-base">
+              Edital {pdfNumero}{" "}
+              <Badge variant="outline" className="ml-2">
+                {pdfTipo === "cp" ? "Concurso Público" : "Processo Seletivo"}
+              </Badge>
+            </DialogTitle>
+            <div className="flex items-center gap-2 pr-8">
+              <Button variant="outline" size="sm" asChild>
+                <a href={pdfNumero ? editalUrl(pdfTipo, pdfNumero, true) : "#"} download>
+                  <Download className="mr-1.5 h-4 w-4" /> Baixar
+                </a>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={pdfNumero ? editalUrl(pdfTipo, pdfNumero) : "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <ExternalLink className="mr-1.5 h-4 w-4" /> Nova aba
+                </a>
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="h-[80vh] w-full bg-muted">
+            {pdfNumero ? (
+              <iframe
+                key={`${pdfTipo}-${pdfNumero}`}
+                title={`Edital ${pdfNumero}`}
+                src={`${editalUrl(pdfTipo, pdfNumero)}#toolbar=1&navpanes=1&view=FitH`}
+                className="h-full w-full"
+              />
+            ) : null}
+          </div>
+          <div className="border-t px-5 py-2 text-xs text-muted-foreground">
+            Use <kbd className="rounded border bg-background px-1">Ctrl</kbd>+
+            <kbd className="rounded border bg-background px-1">F</kbd> dentro do PDF para pesquisar
+            palavras · setas para navegar entre páginas e resultados.
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
