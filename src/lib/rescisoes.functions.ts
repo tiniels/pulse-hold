@@ -20,11 +20,18 @@ export type Rescisao = {
 
 export const listRescisoes = createServerFn({ method: "GET" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("rescisoes")
-    .select("*")
-    .order("data_rescisao", { ascending: false })
-    .limit(10000);
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Rescisao[];
+  const pageSize = 1000;
+  const all: Rescisao[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabaseAdmin
+      .from("rescisoes")
+      .select("*")
+      .order("data_rescisao", { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as Rescisao[];
+    all.push(...rows);
+    if (rows.length < pageSize) break;
+  }
+  return all;
 });
