@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RescisoesRouteImport } from './routes/rescisoes'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicEditalTipoNumeroRouteImport } from './routes/api/public/edital.$tipo.$numero'
 
+const RescisoesRoute = RescisoesRouteImport.update({
+  id: '/rescisoes',
+  path: '/rescisoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -26,32 +32,43 @@ const ApiPublicEditalTipoNumeroRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/rescisoes': typeof RescisoesRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/rescisoes': typeof RescisoesRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/rescisoes': typeof RescisoesRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/edital/$tipo/$numero'
+  fullPaths: '/' | '/rescisoes' | '/api/public/edital/$tipo/$numero'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/edital/$tipo/$numero'
-  id: '__root__' | '/' | '/api/public/edital/$tipo/$numero'
+  to: '/' | '/rescisoes' | '/api/public/edital/$tipo/$numero'
+  id: '__root__' | '/' | '/rescisoes' | '/api/public/edital/$tipo/$numero'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RescisoesRoute: typeof RescisoesRoute
   ApiPublicEditalTipoNumeroRoute: typeof ApiPublicEditalTipoNumeroRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/rescisoes': {
+      id: '/rescisoes'
+      path: '/rescisoes'
+      fullPath: '/rescisoes'
+      preLoaderRoute: typeof RescisoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RescisoesRoute: RescisoesRoute,
   ApiPublicEditalTipoNumeroRoute: ApiPublicEditalTipoNumeroRoute,
 }
 export const routeTree = rootRouteImport

@@ -308,6 +308,63 @@ export type Database = {
         }
         Relationships: []
       }
+      rescisoes: {
+        Row: {
+          cargo_codigo: number | null
+          cargo_nome: string
+          created_at: string
+          data_admissao: string
+          data_rescisao: string
+          dias_permanencia: number
+          id: number
+          matricula: string | null
+          motivo_categoria: string
+          nome: string
+          rescisao_codigo: number
+          rescisao_descricao: string
+          secretaria_codigo: number | null
+          secretaria_nome: string
+          vinculo_categoria: string
+          vinculo_nome: string
+        }
+        Insert: {
+          cargo_codigo?: number | null
+          cargo_nome: string
+          created_at?: string
+          data_admissao: string
+          data_rescisao: string
+          dias_permanencia: number
+          id?: number
+          matricula?: string | null
+          motivo_categoria: string
+          nome: string
+          rescisao_codigo: number
+          rescisao_descricao: string
+          secretaria_codigo?: number | null
+          secretaria_nome: string
+          vinculo_categoria: string
+          vinculo_nome: string
+        }
+        Update: {
+          cargo_codigo?: number | null
+          cargo_nome?: string
+          created_at?: string
+          data_admissao?: string
+          data_rescisao?: string
+          dias_permanencia?: number
+          id?: number
+          matricula?: string | null
+          motivo_categoria?: string
+          nome?: string
+          rescisao_codigo?: number
+          rescisao_descricao?: string
+          secretaria_codigo?: number | null
+          secretaria_nome?: string
+          vinculo_categoria?: string
+          vinculo_nome?: string
+        }
+        Relationships: []
+      }
       vencimentos: {
         Row: {
           cargo: string
