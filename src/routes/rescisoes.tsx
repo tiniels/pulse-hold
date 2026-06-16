@@ -18,7 +18,7 @@ import {
   BarChart, Bar, AreaChart, Area,
 } from "recharts";
 import {
-  CalendarIcon, TrendingDown, TrendingUp, Users, Building2, AlertCircle,
+  CalendarIcon, TrendingDown, TrendingUp, Building2,
   ArrowUpDown, ArrowLeft, X, Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
