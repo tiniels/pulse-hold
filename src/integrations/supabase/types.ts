@@ -251,6 +251,72 @@ export type Database = {
           },
         ]
       }
+      evolucoes_funcionais: {
+        Row: {
+          cargo_atual_codigo: number | null
+          cargo_atual_nome: string | null
+          created_at: string
+          data_admissao: string | null
+          data_rescisao: string | null
+          evolucao_cargo_codigo: number | null
+          evolucao_cargo_nome: string | null
+          evolucao_data: string | null
+          evolucao_fundamento: string | null
+          fundamento_categoria: string | null
+          id: number
+          matricula: string
+          nome: string
+          rescisao_codigo: number | null
+          rescisao_descricao: string | null
+          secretaria_codigo: number | null
+          secretaria_nome: string | null
+          vinculo_codigo: number | null
+          vinculo_nome: string | null
+        }
+        Insert: {
+          cargo_atual_codigo?: number | null
+          cargo_atual_nome?: string | null
+          created_at?: string
+          data_admissao?: string | null
+          data_rescisao?: string | null
+          evolucao_cargo_codigo?: number | null
+          evolucao_cargo_nome?: string | null
+          evolucao_data?: string | null
+          evolucao_fundamento?: string | null
+          fundamento_categoria?: string | null
+          id?: number
+          matricula: string
+          nome: string
+          rescisao_codigo?: number | null
+          rescisao_descricao?: string | null
+          secretaria_codigo?: number | null
+          secretaria_nome?: string | null
+          vinculo_codigo?: number | null
+          vinculo_nome?: string | null
+        }
+        Update: {
+          cargo_atual_codigo?: number | null
+          cargo_atual_nome?: string | null
+          created_at?: string
+          data_admissao?: string | null
+          data_rescisao?: string | null
+          evolucao_cargo_codigo?: number | null
+          evolucao_cargo_nome?: string | null
+          evolucao_data?: string | null
+          evolucao_fundamento?: string | null
+          fundamento_categoria?: string | null
+          id?: number
+          matricula?: string
+          nome?: string
+          rescisao_codigo?: number | null
+          rescisao_descricao?: string | null
+          secretaria_codigo?: number | null
+          secretaria_nome?: string | null
+          vinculo_codigo?: number | null
+          vinculo_nome?: string | null
+        }
+        Relationships: []
+      }
       processo_seletivo: {
         Row: {
           cargo: string
