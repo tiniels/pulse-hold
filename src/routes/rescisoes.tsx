@@ -66,8 +66,10 @@ export const Route = createFileRoute("/rescisoes")({
       { name: "description", content: "Painel analítico de desligamentos e rescisões de servidores municipais com filtros, KPIs e gráficos comparativos." },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(rescisoesQuery),
-  loaderDeps: () => ({}),
+  loader: ({ context }) => Promise.all([
+    context.queryClient.ensureQueryData(rescisoesQuery),
+    context.queryClient.ensureQueryData(evolucoesQuery),
+  ]),
   component: () => (
     <LoginGate>
       <RescisoesPage />
