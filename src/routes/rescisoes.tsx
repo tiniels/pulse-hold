@@ -804,7 +804,7 @@ function CargoDeepDive({ data, allCargos }: { data: Rescisao[]; allCargos: strin
 
 type SortKey = "cargo_nome" | "secretaria_nome" | "data_admissao" | "data_rescisao" | "vinculo_categoria" | "motivo_categoria";
 
-function DetailsTable({ data }: { data: Rescisao[] }) {
+function DetailsTable({ data, onRowClick }: { data: Aggregated[]; onRowClick?: (r: Aggregated) => void }) {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [search, setSearch] = useState("");
@@ -898,7 +898,11 @@ function DetailsTable({ data }: { data: Rescisao[] }) {
             </TableHeader>
             <TableBody>
               {pageData.map((r) => (
-                <TableRow key={r.id}>
+                <TableRow
+                  key={r.id}
+                  className={onRowClick ? "cursor-pointer hover:bg-accent/50" : ""}
+                  onClick={() => onRowClick?.(r)}
+                >
                   <TableCell className="text-xs">
                     <div className="font-medium">{r.cargo_nome}</div>
                     <div className="text-muted-foreground">{r.nome}</div>
