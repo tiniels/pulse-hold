@@ -2,6 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { listRescisoes, type Rescisao } from "@/lib/rescisoes.functions";
+import { listEvolucoes } from "@/lib/evolucoes.functions";
+import { buildAggregated, type Aggregated } from "@/lib/rescisao-aggregate";
+import { LoginGate } from "@/components/rescisoes/LoginGate";
+import { JornadaTimeline } from "@/components/rescisoes/JornadaTimeline";
+import { EvolucaoAnalysis } from "@/components/rescisoes/EvolucaoAnalysis";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +54,10 @@ const rescisoesQuery = queryOptions({
   queryKey: ["rescisoes", "all"],
   queryFn: () => listRescisoes(),
 });
+const evolucoesQuery = queryOptions({
+  queryKey: ["evolucoes", "all"],
+  queryFn: () => listEvolucoes(),
+});
 
 export const Route = createFileRoute("/rescisoes")({
   head: () => ({
@@ -58,7 +67,12 @@ export const Route = createFileRoute("/rescisoes")({
     ],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(rescisoesQuery),
-  component: RescisoesPage,
+  loaderDeps: () => ({}),
+  component: () => (
+    <LoginGate>
+      <RescisoesPage />
+    </LoginGate>
+  ),
   errorComponent: ({ error }) => (
     <div className="p-8 text-destructive">Erro: {error.message}</div>
   ),
@@ -78,6 +92,10 @@ function toISO(d: Date) {
 
 function RescisoesPage() {
   const { data } = useSuspenseQuery(rescisoesQuery);
+  const { data: evolucoes } = useSuspenseQuery(evolucoesQuery);
+
+  // Build per-servant aggregated info (joined by matricula)
+  const aggregatedAll = useMemo(() => buildAggregated(data, evolucoes), [data, evolucoes]);
 
   // Bounds
   const bounds = useMemo(() => {
@@ -95,6 +113,9 @@ function RescisoesPage() {
   const [secretarias, setSecretarias] = useState<string[]>([]);
   const [cargos, setCargos] = useState<string[]>([]);
   const [vinculos, setVinculos] = useState<string[]>(["Estatutário"]);
+  const [evolStatus, setEvolStatus] = useState<"all" | "evolved" | "noevol">("all");
+  const [tempoEvol, setTempoEvol] = useState<"all" | "lt1" | "1to3" | "gt3">("all");
+  const [openJornada, setOpenJornada] = useState<Aggregated | null>(null);
 
   const allSecretarias = useMemo(
     () => [...new Set(data.map((r) => r.secretaria_nome))].sort(),
@@ -106,24 +127,36 @@ function RescisoesPage() {
   );
 
   // Apply filters
-  const filtered = useMemo(() => {
+  const filtered = useMemo<Aggregated[]>(() => {
     const from = dateRange.from ? toISO(dateRange.from) : null;
     const to = dateRange.to ? toISO(dateRange.to) : null;
-    return data.filter((r) => {
+    return aggregatedAll.filter((r) => {
       if (from && r.data_rescisao < from) return false;
       if (to && r.data_rescisao > to) return false;
       if (vinculos.length && !vinculos.includes(r.vinculo_categoria)) return false;
       if (secretarias.length && !secretarias.includes(r.secretaria_nome)) return false;
       if (cargos.length && !cargos.includes(r.cargo_nome)) return false;
+      if (evolStatus === "evolved" && !r.hasEvolucao) return false;
+      if (evolStatus === "noevol" && r.hasEvolucao) return false;
+      if (tempoEvol !== "all") {
+        const d = r.diasUltimaEvolAteRescisao;
+        if (d === null) return false;
+        const years = d / 365.25;
+        if (tempoEvol === "lt1" && years >= 1) return false;
+        if (tempoEvol === "1to3" && (years < 1 || years > 3)) return false;
+        if (tempoEvol === "gt3" && years <= 3) return false;
+      }
       return true;
     });
-  }, [data, dateRange, vinculos, secretarias, cargos]);
+  }, [aggregatedAll, dateRange, vinculos, secretarias, cargos, evolStatus, tempoEvol]);
 
   const clearAll = () => {
     setDateRange({});
     setSecretarias([]);
     setCargos([]);
     setVinculos(["Estatutário"]);
+    setEvolStatus("all");
+    setTempoEvol("all");
   };
 
   const hasFilters =
@@ -153,6 +186,10 @@ function RescisoesPage() {
         setCargos={setCargos}
         vinculos={vinculos}
         setVinculos={setVinculos}
+        evolStatus={evolStatus}
+        setEvolStatus={setEvolStatus}
+        tempoEvol={tempoEvol}
+        setTempoEvol={setTempoEvol}
         onClear={clearAll}
         hasFilters={!!hasFilters}
         applyYear={applyYear}
@@ -180,12 +217,27 @@ function RescisoesPage() {
           <TrendLines data={filtered} />
         </div>
 
+        <div>
+          <h2 className="text-lg font-bold mb-3">Evolução Funcional & Pós-Promoção</h2>
+          <EvolucaoAnalysis aggregated={filtered} />
+        </div>
+
         <YearCompare data={data} vinculos={vinculos} secretarias={secretarias} cargos={cargos} />
 
         <CargoDeepDive data={filtered} allCargos={allCargos} />
 
-        <DetailsTable data={filtered} />
+        <DetailsTable data={filtered} onRowClick={setOpenJornada} />
       </div>
+
+      {openJornada && (
+        <JornadaTimeline
+          open={!!openJornada}
+          onClose={() => setOpenJornada(null)}
+          nome={openJornada.nome}
+          matricula={openJornada.matricula ?? ""}
+          eventos={openJornada.eventos}
+        />
+      )}
     </div>
   );
 }
