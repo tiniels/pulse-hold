@@ -253,6 +253,10 @@ function FiltersBar(props: {
   setCargos: (s: string[]) => void;
   vinculos: string[];
   setVinculos: (s: string[]) => void;
+  evolStatus: "all" | "evolved" | "noevol";
+  setEvolStatus: (v: "all" | "evolved" | "noevol") => void;
+  tempoEvol: "all" | "lt1" | "1to3" | "gt3";
+  setTempoEvol: (v: "all" | "lt1" | "1to3" | "gt3") => void;
   onClear: () => void;
   hasFilters: boolean;
   applyYear: (y: number) => void;
@@ -316,6 +320,24 @@ function FiltersBar(props: {
           onChange={props.setVinculos}
           searchable={false}
         />
+
+        <Select value={props.evolStatus} onValueChange={(v) => props.setEvolStatus(v as any)}>
+          <SelectTrigger className="w-[200px] h-9"><SelectValue placeholder="Status de Evolução" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Evolução: Todos</SelectItem>
+            <SelectItem value="evolved">Evoluíram antes de sair</SelectItem>
+            <SelectItem value="noevol">Saíram sem evoluir</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={props.tempoEvol} onValueChange={(v) => props.setTempoEvol(v as any)}>
+          <SelectTrigger className="w-[220px] h-9"><SelectValue placeholder="Tempo desde evolução" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tempo desde última evolução</SelectItem>
+            <SelectItem value="lt1">Menos de 1 ano</SelectItem>
+            <SelectItem value="1to3">1 a 3 anos</SelectItem>
+            <SelectItem value="gt3">Mais de 3 anos</SelectItem>
+          </SelectContent>
+        </Select>
 
         {props.hasFilters && (
           <Button variant="ghost" size="sm" onClick={props.onClear} className="ml-auto">
