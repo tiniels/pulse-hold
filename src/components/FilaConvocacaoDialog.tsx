@@ -19,7 +19,7 @@ function fmtDate(d?: string | null) {
 
 function CargoInfoPanel({ info }: { info: ReturnType<typeof getCargoInfo> }) {
   if (!info) return null;
-  const showSalDiff = info.salarioBase && info.salarioReal && info.salarioBase.trim() !== info.salarioReal.trim();
+  const showSalDiff = !!(info.salarioBase && info.salarioReal && info.salarioBase.trim() !== info.salarioReal.trim());
   return (
     <section className="rounded-lg border bg-gradient-to-br from-card to-muted/30 p-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
