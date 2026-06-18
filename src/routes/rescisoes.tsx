@@ -7,6 +7,7 @@ import { buildAggregated, type Aggregated } from "@/lib/rescisao-aggregate";
 import { LoginGate } from "@/components/rescisoes/LoginGate";
 import { JornadaTimeline } from "@/components/rescisoes/JornadaTimeline";
 import { EvolucaoAnalysis } from "@/components/rescisoes/EvolucaoAnalysis";
+import { ServidoresListDialog } from "@/components/rescisoes/ServidoresListDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -460,7 +461,8 @@ function KpiCards({ data, dateRange, all }: { data: Rescisao[]; dateRange: DateR
   );
 }
 
-function MotivoDonut({ data }: { data: Rescisao[] }) {
+function MotivoDonut({ data }: { data: Aggregated[] }) {
+  const [sel, setSel] = useState<string | null>(null);
   const chart = useMemo(() => {
     const m = new Map<string, number>();
     for (const r of data) m.set(r.motivo_categoria, (m.get(r.motivo_categoria) ?? 0) + 1);
@@ -469,14 +471,30 @@ function MotivoDonut({ data }: { data: Rescisao[] }) {
       .map((mt) => ({ name: mt, value: m.get(mt)!, fill: MOTIVO_COLORS[mt] }));
   }, [data]);
   const total = data.length;
+  const selRows = useMemo(
+    () => (sel ? data.filter((r) => r.motivo_categoria === sel) : []),
+    [data, sel],
+  );
   return (
     <Card>
-      <CardHeader><CardTitle>Distribuição por Motivo</CardTitle></CardHeader>
+      <CardHeader>
+        <CardTitle>Distribuição por Motivo</CardTitle>
+        <p className="text-xs text-muted-foreground">Clique numa fatia para ver os servidores</p>
+      </CardHeader>
       <CardContent>
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={chart} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={2}>
+              <Pie
+                data={chart}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={2}
+                cursor="pointer"
+                onClick={(d: any) => d?.name && setSel(d.name)}
+              >
                 {chart.map((e) => <Cell key={e.name} fill={e.fill} />)}
               </Pie>
               <RTooltip
@@ -487,6 +505,14 @@ function MotivoDonut({ data }: { data: Rescisao[] }) {
           </ResponsiveContainer>
         </div>
         <div className="text-center text-sm text-muted-foreground">Total: <span className="font-bold text-foreground">{total}</span></div>
+        {sel && (
+          <ServidoresListDialog
+            open
+            onClose={() => setSel(null)}
+            title={`Motivo: ${sel}`}
+            rows={selRows}
+          />
+        )}
       </CardContent>
     </Card>
   );
