@@ -17,6 +17,73 @@ function fmtDate(d?: string | null) {
   return `${day}/${m}/${y}`;
 }
 
+function CargoInfoPanel({ info }: { info: ReturnType<typeof getCargoInfo> }) {
+  if (!info) return null;
+  const showSalDiff = info.salarioBase && info.salarioReal && info.salarioBase.trim() !== info.salarioReal.trim();
+  return (
+    <section className="rounded-lg border bg-gradient-to-br from-card to-muted/30 p-4 space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Briefcase className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold">Informações do Cargo</h3>
+        {info.nivel && (
+          <Badge variant="outline" className={nivelTone(info.nivel)}>
+            {info.nivel.trim()}
+          </Badge>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+        <InfoItem icon={Wallet} label="Salário Base" value={formatBRL(info.salarioBase)} />
+        <InfoItem
+          icon={Wallet}
+          label="Salário Real Esperado"
+          value={formatBRL(info.salarioReal)}
+          highlight={showSalDiff}
+        />
+        <InfoItem icon={Clock} label="Jornada" value={displayOrFallback(info.jornada)} />
+        <InfoItem icon={GraduationCap} label="Requisitos" value={displayOrFallback(info.requisitos)} wide />
+        <InfoItem icon={Gift} label="Benefícios" value={displayOrFallback(info.beneficio)} />
+        <InfoItem icon={Plus} label="Adicionais" value={displayOrFallback(info.adicionais)} wide />
+        {info.provaPratica && info.provaPratica.trim() && (
+          <InfoItem icon={FileText} label="Prova Prática / Curso" value={displayOrFallback(info.provaPratica)} wide />
+        )}
+        {info.memo && info.memo.trim() && (
+          <InfoItem icon={FileText} label="MEMO" value={displayOrFallback(info.memo)} />
+        )}
+        {info.dataHomologacao?.trim() && (
+          <InfoItem icon={Calendar} label="Homologação CP" value={info.dataHomologacao} />
+        )}
+        {info.vencimento?.trim() && (
+          <InfoItem icon={Calendar} label="Vencimento CP" value={info.vencimento} />
+        )}
+        {info.prorrogacao?.trim() && (
+          <InfoItem icon={Calendar} label="Prorrogação CP" value={info.prorrogacao} />
+        )}
+        {info.regularizar?.trim() && (
+          <InfoItem icon={AlertCircle} label="Regularizar" value={info.regularizar} />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function InfoItem({
+  icon: Icon, label, value, wide, highlight,
+}: {
+  icon: any; label: string; value: string; wide?: boolean; highlight?: boolean;
+}) {
+  return (
+    <div className={`rounded-md border bg-background/60 p-2.5 ${wide ? "sm:col-span-2 lg:col-span-3" : ""}`}>
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+        <Icon className="h-3 w-3" />
+        {label}
+      </div>
+      <div className={`mt-1 text-xs leading-snug whitespace-pre-wrap break-words ${highlight ? "font-semibold text-primary" : "text-foreground"}`}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
