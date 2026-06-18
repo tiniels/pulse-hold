@@ -25,6 +25,7 @@ import {
   TrendingUp, Calendar, FileText, Download, ExternalLink,
 } from "lucide-react";
 import { FilaConvocacaoDialog } from "@/components/FilaConvocacaoDialog";
+import { getCargoInfo, formatBRL, nivelTone } from "@/lib/cargo-info";
 
 const dashQuery = queryOptions({
   queryKey: ["dpcab", "dashboard"],
@@ -465,32 +466,31 @@ function Index() {
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Aprov.</TableHead>
                         <TableHead className="text-right">Disp.</TableHead>
-                        <TableHead className="text-right">Atend.</TableHead>
-                        <TableHead className="text-right">Andam.</TableHead>
-                        <TableHead className="text-right">Desist.</TableHead>
-                        <TableHead>Homologação</TableHead>
-                        <TableHead>Vencimento</TableHead>
-                        <TableHead>Prorrogação</TableHead>
+                        <TableHead className="text-right">Salário Real</TableHead>
+                        <TableHead>Nível</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCP.map(r => (
-                        <TableRow key={r.id}>
-                          <TableCell className="font-medium">
-                            <button onClick={() => openFila(r.cargo)} className="text-left hover:underline text-primary">{r.cargo}</button>
-                          </TableCell>
-                          <TableCell><NumeroLink tipo="cp" numero={r.numero} /></TableCell>
-                          <TableCell>{statusBadge(r.homologacao_status)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{r.qtd_aprovados ?? "—"}</TableCell>
-                          <TableCell className="text-right tabular-nums font-semibold">{r.total_disponivel}</TableCell>
-                          <TableCell className="text-right tabular-nums">{r.qtd_atendida ?? "—"}</TableCell>
-                          <TableCell className="text-right tabular-nums">{r.pedidos_andamento ?? "—"}</TableCell>
-                          <TableCell className="text-right tabular-nums">{r.desistencias_renuncias ?? "—"}</TableCell>
-                          <TableCell>{fmtDate(r.data_homologacao)}</TableCell>
-                          <TableCell>{fmtDate(r.vencimento)}</TableCell>
-                          <TableCell>{fmtDate(r.prorrogacao)}</TableCell>
-                        </TableRow>
-                      ))}
+                      {filteredCP.map(r => {
+                        const info = getCargoInfo(r.cargo);
+                        return (
+                          <TableRow key={r.id} className="cursor-pointer" onClick={() => openFila(r.cargo)}>
+                            <TableCell className="font-medium">
+                              <button onClick={(e) => { e.stopPropagation(); openFila(r.cargo); }} className="text-left hover:underline text-primary">{r.cargo}</button>
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}><NumeroLink tipo="cp" numero={r.numero} /></TableCell>
+                            <TableCell>{statusBadge(r.homologacao_status)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{r.qtd_aprovados ?? "—"}</TableCell>
+                            <TableCell className="text-right tabular-nums font-semibold">{r.total_disponivel}</TableCell>
+                            <TableCell className="text-right tabular-nums">{info ? formatBRL(info.salarioReal) : "—"}</TableCell>
+                            <TableCell>
+                              {info?.nivel?.trim()
+                                ? <Badge variant="outline" className={nivelTone(info.nivel)}>{info.nivel.trim()}</Badge>
+                                : <span className="text-muted-foreground text-xs">—</span>}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
