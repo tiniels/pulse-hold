@@ -8,7 +8,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Phone, Trophy, ChevronRight, Users } from "lucide-react";
+import { Phone, Trophy, ChevronRight, Users, Briefcase, Clock, Wallet, GraduationCap, Gift, Plus, FileText, Calendar, AlertCircle } from "lucide-react";
+import { getCargoInfo, formatBRL, nivelTone, displayOrFallback } from "@/lib/cargo-info";
 
 function fmtDate(d?: string | null) {
   if (!d) return "—";
@@ -27,6 +28,8 @@ export function FilaConvocacaoDialog({ open, onOpenChange, cargoNome }: Props) {
   const obterFn = useServerFn(obterFila);
   const convocarFn = useServerFn(convocarCandidato);
   const qc = useQueryClient();
+
+  const info = getCargoInfo(cargoNome);
 
   const q = useQuery({
     queryKey: ["fila", cargoNome, lista],
@@ -68,6 +71,8 @@ export function FilaConvocacaoDialog({ open, onOpenChange, cargoNome }: Props) {
         </div>
 
         <div className="max-h-[70vh] overflow-auto p-5 pt-3 space-y-4">
+          {info && <CargoInfoPanel info={info} />}
+
           {q.isLoading && <div className="text-sm text-muted-foreground">Carregando fila…</div>}
           {q.error && <div className="text-sm text-destructive">Erro: {(q.error as Error).message}</div>}
 
