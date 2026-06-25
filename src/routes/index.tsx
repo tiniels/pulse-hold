@@ -291,9 +291,15 @@ function Index() {
               Departamento Admissional · Concursos e Processos Seletivos
             </p>
           </div>
-          <div className="text-right text-xs text-muted-foreground">
-            <div>Secretaria Municipal de Administração</div>
-            <div>Painel atualizado em tempo real</div>
+          <div className="flex items-center gap-4">
+            <nav className="flex items-center gap-2 text-xs">
+              <a href="/admissao" className="rounded-md border px-3 py-1.5 font-medium hover:bg-accent">Admissão</a>
+              <a href="/rescisoes" className="rounded-md border px-3 py-1.5 font-medium hover:bg-accent">Rescisões</a>
+            </nav>
+            <div className="text-right text-xs text-muted-foreground">
+              <div>Secretaria Municipal de Administração</div>
+              <div>Painel atualizado em tempo real</div>
+            </div>
           </div>
         </div>
       </header>
