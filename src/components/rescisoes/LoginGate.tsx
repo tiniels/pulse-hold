@@ -17,7 +17,7 @@ export function LoginGate({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [checked, setChecked] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [pass, setPass] = useState("");
   const [err, setErr] = useState("");
   const [info, setInfo] = useState("");
@@ -50,21 +50,28 @@ export function LoginGate({ children }: { children: React.ReactNode }) {
   }
   if (session) return <>{children}</>;
 
+  const usernameToEmail = (u: string) => {
+    const v = u.trim().toLowerCase();
+    if (!v) return "";
+    return v.includes("@") ? v : `${v}@dpcab.local`;
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
     setInfo("");
     setBusy(true);
     try {
+      const email = usernameToEmail(username);
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
+          email,
           password: pass,
         });
         if (error) throw error;
       } else {
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email,
           password: pass,
           options: {
             emailRedirectTo:
@@ -74,7 +81,7 @@ export function LoginGate({ children }: { children: React.ReactNode }) {
         if (error) throw error;
         if (!data.session) {
           setInfo(
-            "Conta criada. Verifique seu e-mail para confirmar antes de entrar.",
+            "Conta criada. Caso a confirmação por e-mail esteja ativa, será necessário confirmar antes de entrar.",
           );
         }
       }
@@ -100,14 +107,14 @@ export function LoginGate({ children }: { children: React.ReactNode }) {
         <CardContent>
           <form onSubmit={submit} className="space-y-3">
             <div className="space-y-1">
-              <Label htmlFor="email" className="text-xs">E-mail</Label>
+              <Label htmlFor="username" className="text-xs">Usuário</Label>
               <Input
-                id="email"
-                type="email"
-                autoComplete="email"
+                id="username"
+                type="text"
+                autoComplete="username"
                 autoFocus
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>
