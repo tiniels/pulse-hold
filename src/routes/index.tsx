@@ -30,6 +30,7 @@ import { LoginGate } from "@/components/rescisoes/LoginGate";
 import { GlobalPeriodFilter } from "@/components/period/GlobalPeriodFilter";
 import { PeriodComparator, type MetricResult } from "@/components/period/PeriodComparator";
 import { usePeriod } from "@/contexts/PeriodContext";
+import { DrillDialog } from "@/components/charts/DrillDialog";
 
 const dashQuery = queryOptions({
   queryKey: ["dpcab", "dashboard"],
@@ -166,6 +167,13 @@ function Index() {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [filaOpen, setFilaOpen] = useState(false);
   const [filaCargo, setFilaCargo] = useState<string | null>(null);
+
+  // Drill-down state for clicking on chart segments.
+  const [drill, setDrill] = useState<{
+    title: string;
+    kind: "cargo" | "status";
+    rows: any[];
+  } | null>(null);
 
   function openFila(cargo: string) {
     setFilaCargo(cargo);
