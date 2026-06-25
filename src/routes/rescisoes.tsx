@@ -234,7 +234,13 @@ function RescisoesPage() {
           <EvolucaoAnalysis aggregated={filtered} />
         </div>
 
-        <YearCompare data={data} vinculos={vinculos} secretarias={secretarias} cargos={cargos} />
+        <YearCompare
+          data={data}
+          vinculos={vinculos}
+          secretarias={secretarias}
+          cargos={cargos}
+          aggregatedAll={aggregatedAll}
+        />
 
         <CargoDeepDive data={filtered} allCargos={allCargos} />
 
