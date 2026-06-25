@@ -428,15 +428,31 @@ function AdmissaoPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Origem dos Novos Efetivos</CardTitle></CardHeader>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Origem dos Novos Efetivos</CardTitle>
+                  <p className="text-[10px] text-muted-foreground">Clique em uma fatia para listar os servidores.</p>
+                </CardHeader>
                 <CardContent className="h-72">
-                  <OrigemPie data={filtered.filter((a) => a.destinoTipo === "Novo Efetivo")} />
+                  <OrigemPie
+                    data={filtered.filter((a) => a.destinoTipo === "Novo Efetivo")}
+                    onSelect={(name, rows) =>
+                      setDrillAdm({ title: `Novos Efetivos — Origem: ${name}`, rows })
+                    }
+                  />
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Distribuição por Vínculo</CardTitle></CardHeader>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Distribuição por Vínculo</CardTitle>
+                  <p className="text-[10px] text-muted-foreground">Clique em uma fatia para listar os servidores.</p>
+                </CardHeader>
                 <CardContent className="h-72">
-                  <VincPie data={filtered} />
+                  <VincPie
+                    data={filtered}
+                    onSelect={(name, rows) =>
+                      setDrillAdm({ title: `Vínculo: ${name}`, rows })
+                    }
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -457,7 +473,10 @@ function AdmissaoPage() {
           {/* ---------- Secretaria ---------- */}
           <TabsContent value="secretaria" className="space-y-4">
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Admitidos vs Exonerados por Secretaria</CardTitle></CardHeader>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Admitidos vs Exonerados por Secretaria</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Clique em uma barra para listar os servidores correspondentes.</p>
+              </CardHeader>
               <CardContent className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={secComp} layout="vertical" margin={{ left: 100 }}>
@@ -466,14 +485,53 @@ function AdmissaoPage() {
                     <YAxis type="category" dataKey="secretaria" tick={{ fontSize: 11 }} width={100} />
                     <RTooltip />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar dataKey="admitidos" fill="hsl(142 71% 45%)" name="Admitidos" />
-                    <Bar dataKey="exonerados" fill="hsl(0 84% 60%)" name="Exonerados" />
+                    <Bar
+                      dataKey="admitidos"
+                      fill="hsl(142 71% 45%)"
+                      name="Admitidos"
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const sec = d?.secretaria as string | undefined;
+                        if (!sec) return;
+                        setDrillAdm({
+                          title: `Admitidos — Secretaria: ${sec}`,
+                          rows: filtered.filter((a) => (a.secretaria || "—") === sec),
+                        });
+                      }}
+                    />
+                    <Bar
+                      dataKey="exonerados"
+                      fill="hsl(0 84% 60%)"
+                      name="Exonerados"
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const sec = d?.secretaria as string | undefined;
+                        if (!sec) return;
+                        const minDate = filtered.reduce(
+                          (m, a) =>
+                            a.data_efetiva && (!m || a.data_efetiva < m) ? a.data_efetiva : m,
+                          "" as string,
+                        );
+                        const rows = rescisoes.filter(
+                          (r) =>
+                            (r.secretaria_nome || "—") === sec &&
+                            (!minDate || r.data_rescisao >= minDate),
+                        );
+                        setDrillExo({
+                          title: `Exonerados — Secretaria: ${sec}`,
+                          rows,
+                        });
+                      }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Top Cargos por Turnover (Admissões + Exonerações)</CardTitle></CardHeader>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Top Cargos por Turnover (Admissões + Exonerações)</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Clique em uma barra para listar os servidores.</p>
+              </CardHeader>
               <CardContent className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={cargoRot} layout="vertical" margin={{ left: 160 }}>
@@ -482,8 +540,46 @@ function AdmissaoPage() {
                     <YAxis type="category" dataKey="cargo" tick={{ fontSize: 10 }} width={160} />
                     <RTooltip />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar dataKey="admitidos" stackId="a" fill="hsl(142 71% 45%)" name="Admitidos" />
-                    <Bar dataKey="exonerados" stackId="a" fill="hsl(0 84% 60%)" name="Exonerados" />
+                    <Bar
+                      dataKey="admitidos"
+                      stackId="a"
+                      fill="hsl(142 71% 45%)"
+                      name="Admitidos"
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const cg = (d?.cargo || "").trim();
+                        if (!cg) return;
+                        setDrillAdm({
+                          title: `Admitidos — Cargo: ${cg}`,
+                          rows: filtered.filter((a) => (a.cargo || "—").trim() === cg),
+                        });
+                      }}
+                    />
+                    <Bar
+                      dataKey="exonerados"
+                      stackId="a"
+                      fill="hsl(0 84% 60%)"
+                      name="Exonerados"
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const cg = (d?.cargo || "").trim();
+                        if (!cg) return;
+                        const minDate = filtered.reduce(
+                          (m, a) =>
+                            a.data_efetiva && (!m || a.data_efetiva < m) ? a.data_efetiva : m,
+                          "" as string,
+                        );
+                        const rows = rescisoes.filter(
+                          (r) =>
+                            (r.cargo_nome || "—").trim() === cg &&
+                            (!minDate || r.data_rescisao >= minDate),
+                        );
+                        setDrillExo({
+                          title: `Exonerados — Cargo: ${cg}`,
+                          rows,
+                        });
+                      }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
