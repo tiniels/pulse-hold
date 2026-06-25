@@ -27,6 +27,9 @@ import {
 import { FilaConvocacaoDialog } from "@/components/FilaConvocacaoDialog";
 import { getCargoInfo, formatBRL, nivelTone } from "@/lib/cargo-info";
 import { LoginGate } from "@/components/rescisoes/LoginGate";
+import { GlobalPeriodFilter } from "@/components/period/GlobalPeriodFilter";
+import { PeriodComparator, type MetricResult } from "@/components/period/PeriodComparator";
+import { usePeriod } from "@/contexts/PeriodContext";
 
 const dashQuery = queryOptions({
   queryKey: ["dpcab", "dashboard"],
@@ -301,6 +304,7 @@ function Index() {
               <a href="/admissao" className="rounded-md border px-3 py-1.5 font-medium hover:bg-accent">Admissão</a>
               <a href="/rescisoes" className="rounded-md border px-3 py-1.5 font-medium hover:bg-accent">Rescisões</a>
             </nav>
+            <GlobalPeriodFilter />
             <div className="text-right text-xs text-muted-foreground">
               <div>Secretaria Municipal de Administração</div>
               <div>Painel atualizado em tempo real</div>
@@ -557,6 +561,8 @@ function Index() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <IndexPeriodComparator cp={cp} ps={ps} venc={venc} />
       </main>
 
       <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
