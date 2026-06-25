@@ -6,6 +6,9 @@ import { listRescisoes, type Rescisao } from "@/lib/rescisoes.functions";
 import { listEvolucoes } from "@/lib/evolucoes.functions";
 import { LoginGate } from "@/components/rescisoes/LoginGate";
 import { JornadaTimeline } from "@/components/rescisoes/JornadaTimeline";
+import { GlobalPeriodFilter } from "@/components/period/GlobalPeriodFilter";
+import { PeriodComparator, type MetricResult } from "@/components/period/PeriodComparator";
+import { usePeriod } from "@/contexts/PeriodContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -96,6 +99,7 @@ function AdmissaoPage() {
   const { data: admissoes } = useSuspenseQuery(admissoesQuery);
   const { data: rescisoes } = useSuspenseQuery(rescisoesQuery);
   const { data: evolucoes } = useSuspenseQuery(evolucoesQuery);
+  const { fromISO: periodFrom, toISO: periodTo, active: periodActive } = usePeriod();
 
   // index rescisoes
   const { rescPorPront, rescPorNome } = useMemo(() => {
@@ -163,6 +167,12 @@ function AdmissaoPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return enriched.filter((a) => {
+      if (periodActive) {
+        const d = a.data_efetiva ?? null;
+        if (!d) return false;
+        if (periodFrom && d < periodFrom) return false;
+        if (periodTo && d > periodTo) return false;
+      }
       if (secretaria !== "__all" && a.secretaria !== secretaria) return false;
       if (vinculo !== "__all" && a.vinculo_categoria !== vinculo) return false;
       if (origem !== "__all" && a.origemTipo !== origem) return false;
@@ -173,7 +183,30 @@ function AdmissaoPage() {
       }
       return true;
     });
-  }, [enriched, search, secretaria, vinculo, origem, tipo]);
+  }, [enriched, search, secretaria, vinculo, origem, tipo, periodActive, periodFrom, periodTo]);
+
+  // ---------------- Comparator metric callback ----------------
+  const compareMetrics = useMemo(() => {
+    return (fromISO: string, toISO: string): MetricResult[] => {
+      const inRange = (d: string | null | undefined) =>
+        !!d && d >= fromISO && d <= toISO;
+      const adms = enriched.filter((a) => inRange(a.data_efetiva));
+      const exs = rescisoes.filter((r) => inRange(r.data_rescisao));
+      const novosEf = adms.filter((a) => a.destinoTipo === "Novo Efetivo");
+      const prata = novosEf.filter(
+        (a) => a.origemTipo === "Ex-Estagiário" || a.origemTipo === "Ex-Comissionado" || a.origemTipo === "Ex-Contrato",
+      );
+      const alts = adms.filter((a) => a.tipo_movimentacao === "Alteração de Função");
+      return [
+        { label: "Admissões", value: adms.length },
+        { label: "Exonerações", value: exs.length },
+        { label: "Variação Líquida", value: adms.length - exs.length },
+        { label: "Novos Efetivos", value: novosEf.length },
+        { label: "Aproveitamento Interno", value: prata.length },
+        { label: "Alterações de Função", value: alts.length },
+      ];
+    };
+  }, [enriched, rescisoes]);
 
   // ---------------- KPIs ----------------
   const kpis = useMemo(() => {
@@ -316,6 +349,7 @@ function AdmissaoPage() {
             <p className="text-xs text-muted-foreground">DP - CAB • {filtered.length.toLocaleString("pt-BR")} movimentações em análise</p>
           </div>
           <div className="flex items-center gap-2">
+            <GlobalPeriodFilter />
             <Button asChild variant="ghost" size="sm"><Link to="/rescisoes">Rescisões</Link></Button>
             <Button asChild variant="ghost" size="sm"><Link to="/"><ArrowLeft className="h-4 w-4" /> Voltar</Link></Button>
           </div>
@@ -484,6 +518,8 @@ function AdmissaoPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <PeriodComparator compute={compareMetrics} />
       </div>
 
       {openJornada && (

@@ -27,6 +27,9 @@ import {
 import { FilaConvocacaoDialog } from "@/components/FilaConvocacaoDialog";
 import { getCargoInfo, formatBRL, nivelTone } from "@/lib/cargo-info";
 import { LoginGate } from "@/components/rescisoes/LoginGate";
+import { GlobalPeriodFilter } from "@/components/period/GlobalPeriodFilter";
+import { PeriodComparator, type MetricResult } from "@/components/period/PeriodComparator";
+import { usePeriod } from "@/contexts/PeriodContext";
 
 const dashQuery = queryOptions({
   queryKey: ["dpcab", "dashboard"],
@@ -58,6 +61,39 @@ function fmtDate(d: string | null) {
   if (!d) return "—";
   const [y, m, day] = d.split("-");
   return `${day}/${m}/${y}`;
+}
+
+function IndexPeriodComparator({
+  cp,
+  ps,
+  venc,
+}: {
+  cp: Array<{ data_homologacao?: string | null; total_disponivel?: number | null }>;
+  ps: Array<{ data_homologacao?: string | null; total_disponivel?: number | null }>;
+  venc: Array<{ vencimento_original?: string | null; status?: string | null }>;
+}) {
+  return (
+    <PeriodComparator
+      compute={(fromISO, toISO) => {
+        const inRange = (d?: string | null) => !!d && d >= fromISO && d <= toISO;
+        const cpH = cp.filter((r) => inRange(r.data_homologacao));
+        const psH = ps.filter((r) => inRange(r.data_homologacao));
+        const vencP = venc.filter((v) => inRange(v.vencimento_original));
+        const criticos = vencP.filter(
+          (v) => (v.status || "").toUpperCase().includes("CRÍT") || (v.status || "").toUpperCase().includes("CRIT"),
+        ).length;
+        const sumDisp = (rs: Array<{ total_disponivel?: number | null }>) =>
+          rs.reduce((acc, r) => acc + (r.total_disponivel ?? 0), 0);
+        return [
+          { label: "CP Homologados", value: cpH.length },
+          { label: "PS Homologados", value: psH.length },
+          { label: "Disponíveis (CP+PS)", value: sumDisp(cpH) + sumDisp(psH) },
+          { label: "Vencimentos no período", value: vencP.length },
+          { label: "Críticos no período", value: criticos },
+        ] as MetricResult[];
+      }}
+    />
+  );
 }
 
 function statusBadge(s: string | null | undefined) {
@@ -301,6 +337,7 @@ function Index() {
               <a href="/admissao" className="rounded-md border px-3 py-1.5 font-medium hover:bg-accent">Admissão</a>
               <a href="/rescisoes" className="rounded-md border px-3 py-1.5 font-medium hover:bg-accent">Rescisões</a>
             </nav>
+            <GlobalPeriodFilter />
             <div className="text-right text-xs text-muted-foreground">
               <div>Secretaria Municipal de Administração</div>
               <div>Painel atualizado em tempo real</div>
@@ -557,6 +594,8 @@ function Index() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <IndexPeriodComparator cp={cp} ps={ps} venc={venc} />
       </main>
 
       <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
