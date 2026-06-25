@@ -48,17 +48,13 @@ const evolucoesQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/admissao")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Admissão | Inteligência de Movimentação e Sucessão" },
       { name: "description", content: "Painel de Inteligência de Movimentação: admissões, alterações de função, transições de carreira e alertas de sucessão." },
     ],
   }),
-  loader: ({ context }) => Promise.all([
-    context.queryClient.ensureQueryData(admissoesQuery),
-    context.queryClient.ensureQueryData(rescisoesQuery),
-    context.queryClient.ensureQueryData(evolucoesQuery),
-  ]),
   component: () => (
     <LoginGate>
       <AdmissaoPage />
