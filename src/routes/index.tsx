@@ -30,6 +30,7 @@ import { LoginGate } from "@/components/rescisoes/LoginGate";
 import { GlobalPeriodFilter } from "@/components/period/GlobalPeriodFilter";
 import { PeriodComparator, type MetricResult } from "@/components/period/PeriodComparator";
 import { usePeriod } from "@/contexts/PeriodContext";
+import { DrillDialog } from "@/components/charts/DrillDialog";
 
 const dashQuery = queryOptions({
   queryKey: ["dpcab", "dashboard"],
@@ -166,6 +167,13 @@ function Index() {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [filaOpen, setFilaOpen] = useState(false);
   const [filaCargo, setFilaCargo] = useState<string | null>(null);
+
+  // Drill-down state for clicking on chart segments.
+  const [drill, setDrill] = useState<{
+    title: string;
+    kind: "cargo" | "status";
+    rows: any[];
+  } | null>(null);
 
   function openFila(cargo: string) {
     setFilaCargo(cargo);
@@ -364,6 +372,7 @@ function Index() {
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-base">Top 10 Cargos por Disponibilidade (CP + PS)</CardTitle>
+              <p className="text-[11px] text-muted-foreground">Clique numa coluna para listar os concursos/processos.</p>
             </CardHeader>
             <CardContent>
               <div className="h-[320px] w-full">
@@ -373,8 +382,38 @@ function Index() {
                     <YAxis dataKey="cargo" type="category" width={200} tick={{ fontSize: 11 }} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="cp" stackId="a" name="CP" fill="hsl(220 65% 50%)" />
-                    <Bar dataKey="ps" stackId="a" name="PS" fill="hsl(150 50% 45%)" />
+                    <Bar
+                      dataKey="cp"
+                      stackId="a"
+                      name="CP"
+                      fill="hsl(220 65% 50%)"
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const cg = d?.cargo as string;
+                        if (!cg) return;
+                        setDrill({
+                          title: `CP — ${cg}`,
+                          kind: "cargo",
+                          rows: cp.filter((r: any) => r.cargo === cg),
+                        });
+                      }}
+                    />
+                    <Bar
+                      dataKey="ps"
+                      stackId="a"
+                      name="PS"
+                      fill="hsl(150 50% 45%)"
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const cg = d?.cargo as string;
+                        if (!cg) return;
+                        setDrill({
+                          title: `PS — ${cg}`,
+                          kind: "cargo",
+                          rows: ps.filter((r: any) => r.cargo === cg),
+                        });
+                      }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -384,6 +423,7 @@ function Index() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Distribuição por Status</CardTitle>
+              <p className="text-[11px] text-muted-foreground">Clique numa fatia para ver os concursos/processos.</p>
             </CardHeader>
             <CardContent>
               <div className="h-[320px] w-full">
@@ -398,6 +438,19 @@ function Index() {
                       outerRadius={90}
                       innerRadius={45}
                       label={(e) => `${e.value}`}
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const st = d?.name as string;
+                        if (!st) return;
+                        const rows = [...cp, ...ps].filter(
+                          (r: any) => (r.homologacao_status ?? "—") === st,
+                        );
+                        setDrill({
+                          title: `Status: ${st}`,
+                          kind: "status",
+                          rows,
+                        });
+                      }}
                     >
                       {statusPie.map((_, i) => (
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
@@ -652,6 +705,24 @@ function Index() {
         onOpenChange={setFilaOpen}
         cargoNome={filaCargo}
       />
+
+      {drill && (
+        <DrillDialog<any>
+          open
+          onClose={() => setDrill(null)}
+          title={drill.title}
+          rows={drill.rows}
+          csvName={drill.title}
+          columns={[
+            { key: "numero", label: "Nº", value: (r) => r.numero ?? r.edital_numero ?? "" },
+            { key: "cargo", label: "Cargo", value: (r) => r.cargo ?? "" },
+            { key: "total_disponivel", label: "Disponíveis", value: (r) => r.total_disponivel ?? 0 },
+            { key: "homologacao_status", label: "Status", value: (r) => r.homologacao_status ?? "—" },
+            { key: "data_homologacao", label: "Homologação", value: (r) => r.data_homologacao ?? "" },
+            { key: "vencimento", label: "Vencimento", value: (r) => r.vencimento ?? r.vencimento_original ?? "" },
+          ]}
+        />
+      )}
     </div>
   );
 }

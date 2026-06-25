@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DrillDialog, type DrillColumn } from "@/components/charts/DrillDialog";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend,
   PieChart, Pie, Cell, Sankey, Layer, Rectangle,
@@ -318,6 +319,10 @@ function AdmissaoPage() {
 
   // ---------------- Drill-down ----------------
   const [openJornada, setOpenJornada] = useState<Enriched | null>(null);
+  // Generic chart drill-down: a clicked chart segment opens this modal
+  // listing the servidores that compose the aggregation.
+  const [drillAdm, setDrillAdm] = useState<{ title: string; rows: Enriched[] } | null>(null);
+  const [drillExo, setDrillExo] = useState<{ title: string; rows: Rescisao[] } | null>(null);
   const jornadaEventos = useMemo(() => {
     if (!openJornada) return [];
     const pk = normPront(openJornada.prontuario);
@@ -423,15 +428,31 @@ function AdmissaoPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Origem dos Novos Efetivos</CardTitle></CardHeader>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Origem dos Novos Efetivos</CardTitle>
+                  <p className="text-[10px] text-muted-foreground">Clique em uma fatia para listar os servidores.</p>
+                </CardHeader>
                 <CardContent className="h-72">
-                  <OrigemPie data={filtered.filter((a) => a.destinoTipo === "Novo Efetivo")} />
+                  <OrigemPie
+                    data={filtered.filter((a) => a.destinoTipo === "Novo Efetivo")}
+                    onSelect={(name, rows) =>
+                      setDrillAdm({ title: `Novos Efetivos — Origem: ${name}`, rows })
+                    }
+                  />
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Distribuição por Vínculo</CardTitle></CardHeader>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Distribuição por Vínculo</CardTitle>
+                  <p className="text-[10px] text-muted-foreground">Clique em uma fatia para listar os servidores.</p>
+                </CardHeader>
                 <CardContent className="h-72">
-                  <VincPie data={filtered} />
+                  <VincPie
+                    data={filtered}
+                    onSelect={(name, rows) =>
+                      setDrillAdm({ title: `Vínculo: ${name}`, rows })
+                    }
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -452,7 +473,10 @@ function AdmissaoPage() {
           {/* ---------- Secretaria ---------- */}
           <TabsContent value="secretaria" className="space-y-4">
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Admitidos vs Exonerados por Secretaria</CardTitle></CardHeader>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Admitidos vs Exonerados por Secretaria</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Clique em uma barra para listar os servidores correspondentes.</p>
+              </CardHeader>
               <CardContent className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={secComp} layout="vertical" margin={{ left: 100 }}>
@@ -461,14 +485,53 @@ function AdmissaoPage() {
                     <YAxis type="category" dataKey="secretaria" tick={{ fontSize: 11 }} width={100} />
                     <RTooltip />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar dataKey="admitidos" fill="hsl(142 71% 45%)" name="Admitidos" />
-                    <Bar dataKey="exonerados" fill="hsl(0 84% 60%)" name="Exonerados" />
+                    <Bar
+                      dataKey="admitidos"
+                      fill="hsl(142 71% 45%)"
+                      name="Admitidos"
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const sec = d?.secretaria as string | undefined;
+                        if (!sec) return;
+                        setDrillAdm({
+                          title: `Admitidos — Secretaria: ${sec}`,
+                          rows: filtered.filter((a) => (a.secretaria || "—") === sec),
+                        });
+                      }}
+                    />
+                    <Bar
+                      dataKey="exonerados"
+                      fill="hsl(0 84% 60%)"
+                      name="Exonerados"
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const sec = d?.secretaria as string | undefined;
+                        if (!sec) return;
+                        const minDate = filtered.reduce(
+                          (m, a) =>
+                            a.data_efetiva && (!m || a.data_efetiva < m) ? a.data_efetiva : m,
+                          "" as string,
+                        );
+                        const rows = rescisoes.filter(
+                          (r) =>
+                            (r.secretaria_nome || "—") === sec &&
+                            (!minDate || r.data_rescisao >= minDate),
+                        );
+                        setDrillExo({
+                          title: `Exonerados — Secretaria: ${sec}`,
+                          rows,
+                        });
+                      }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Top Cargos por Turnover (Admissões + Exonerações)</CardTitle></CardHeader>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Top Cargos por Turnover (Admissões + Exonerações)</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Clique em uma barra para listar os servidores.</p>
+              </CardHeader>
               <CardContent className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={cargoRot} layout="vertical" margin={{ left: 160 }}>
@@ -477,8 +540,46 @@ function AdmissaoPage() {
                     <YAxis type="category" dataKey="cargo" tick={{ fontSize: 10 }} width={160} />
                     <RTooltip />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar dataKey="admitidos" stackId="a" fill="hsl(142 71% 45%)" name="Admitidos" />
-                    <Bar dataKey="exonerados" stackId="a" fill="hsl(0 84% 60%)" name="Exonerados" />
+                    <Bar
+                      dataKey="admitidos"
+                      stackId="a"
+                      fill="hsl(142 71% 45%)"
+                      name="Admitidos"
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const cg = (d?.cargo || "").trim();
+                        if (!cg) return;
+                        setDrillAdm({
+                          title: `Admitidos — Cargo: ${cg}`,
+                          rows: filtered.filter((a) => (a.cargo || "—").trim() === cg),
+                        });
+                      }}
+                    />
+                    <Bar
+                      dataKey="exonerados"
+                      stackId="a"
+                      fill="hsl(0 84% 60%)"
+                      name="Exonerados"
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        const cg = (d?.cargo || "").trim();
+                        if (!cg) return;
+                        const minDate = filtered.reduce(
+                          (m, a) =>
+                            a.data_efetiva && (!m || a.data_efetiva < m) ? a.data_efetiva : m,
+                          "" as string,
+                        );
+                        const rows = rescisoes.filter(
+                          (r) =>
+                            (r.cargo_nome || "—").trim() === cg &&
+                            (!minDate || r.data_rescisao >= minDate),
+                        );
+                        setDrillExo({
+                          title: `Exonerados — Cargo: ${cg}`,
+                          rows,
+                        });
+                      }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -529,6 +630,45 @@ function AdmissaoPage() {
           nome={openJornada.nome}
           matricula={openJornada.prontuario ?? ""}
           eventos={jornadaEventos as any}
+        />
+      )}
+
+      {drillAdm && (
+        <DrillDialog<Enriched>
+          open
+          onClose={() => setDrillAdm(null)}
+          title={drillAdm.title}
+          rows={drillAdm.rows}
+          csvName={drillAdm.title}
+          onRowClick={(r) => setOpenJornada(r)}
+          columns={[
+            { key: "prontuario", label: "Prontuário", value: (r) => r.prontuario ?? "" },
+            { key: "nome", label: "Nome", value: (r) => r.nome },
+            { key: "cargo", label: "Cargo", value: (r) => r.cargo ?? "" },
+            { key: "secretaria", label: "Secretaria", value: (r) => r.secretaria ?? "" },
+            { key: "vinculo_categoria", label: "Vínculo", value: (r) => r.vinculo_categoria },
+            { key: "origemTipo", label: "Origem", value: (r) => r.origemTipo },
+            { key: "data_efetiva", label: "Data Admissão", value: (r) => r.data_efetiva ?? "" },
+          ]}
+        />
+      )}
+
+      {drillExo && (
+        <DrillDialog<Rescisao>
+          open
+          onClose={() => setDrillExo(null)}
+          title={drillExo.title}
+          rows={drillExo.rows}
+          csvName={drillExo.title}
+          columns={[
+            { key: "matricula", label: "Matrícula", value: (r) => r.matricula ?? "" },
+            { key: "nome", label: "Nome", value: (r) => r.nome },
+            { key: "cargo_nome", label: "Cargo", value: (r) => r.cargo_nome },
+            { key: "secretaria_nome", label: "Secretaria", value: (r) => r.secretaria_nome },
+            { key: "vinculo_categoria", label: "Vínculo", value: (r) => r.vinculo_categoria },
+            { key: "motivo_categoria", label: "Motivo", value: (r) => (r as any).motivo_categoria ?? "" },
+            { key: "data_rescisao", label: "Data Rescisão", value: (r) => r.data_rescisao },
+          ]}
         />
       )}
     </div>
@@ -638,7 +778,13 @@ function ServidoresTable({ rows, onRowClick, compact, showRescisao }: { rows: En
   );
 }
 
-function OrigemPie({ data }: { data: Enriched[] }) {
+function OrigemPie({
+  data,
+  onSelect,
+}: {
+  data: Enriched[];
+  onSelect?: (name: string, rows: Enriched[]) => void;
+}) {
   const counts = new Map<string, number>();
   for (const a of data) counts.set(a.origemTipo, (counts.get(a.origemTipo) ?? 0) + 1);
   const arr = Array.from(counts.entries()).map(([name, value]) => ({ name, value }));
@@ -647,7 +793,21 @@ function OrigemPie({ data }: { data: Enriched[] }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
-        <Pie data={arr} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={(p: any) => `${p.name}: ${p.value}`}>
+        <Pie
+          data={arr}
+          dataKey="value"
+          nameKey="name"
+          cx="50%"
+          cy="50%"
+          outerRadius={80}
+          innerRadius={40}
+          label={(p: any) => `${p.name}: ${p.value}`}
+          cursor={onSelect ? "pointer" : undefined}
+          onClick={(d: any) => {
+            if (!onSelect || !d?.name) return;
+            onSelect(d.name, data.filter((a) => a.origemTipo === d.name));
+          }}
+        >
           {arr.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
         </Pie>
         <RTooltip />
@@ -655,14 +815,34 @@ function OrigemPie({ data }: { data: Enriched[] }) {
     </ResponsiveContainer>
   );
 }
-function VincPie({ data }: { data: Enriched[] }) {
+function VincPie({
+  data,
+  onSelect,
+}: {
+  data: Enriched[];
+  onSelect?: (name: string, rows: Enriched[]) => void;
+}) {
   const counts = new Map<string, number>();
   for (const a of data) counts.set(a.vinculo_categoria, (counts.get(a.vinculo_categoria) ?? 0) + 1);
   const arr = Array.from(counts.entries()).map(([name, value]) => ({ name, value }));
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
-        <Pie data={arr} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={(p: any) => `${p.name}: ${p.value}`}>
+        <Pie
+          data={arr}
+          dataKey="value"
+          nameKey="name"
+          cx="50%"
+          cy="50%"
+          outerRadius={80}
+          innerRadius={40}
+          label={(p: any) => `${p.name}: ${p.value}`}
+          cursor={onSelect ? "pointer" : undefined}
+          onClick={(d: any) => {
+            if (!onSelect || !d?.name) return;
+            onSelect(d.name, data.filter((a) => a.vinculo_categoria === d.name));
+          }}
+        >
           {arr.map((d, i) => <Cell key={i} fill={VINC_COLORS[d.name] ?? "hsl(210 10% 60%)"} />)}
         </Pie>
         <RTooltip />
