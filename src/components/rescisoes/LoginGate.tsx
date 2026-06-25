@@ -5,28 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
 
-const KEY = "rescisoes_auth_v1";
+const KEY = "dpcab_auth_v1";
 const USER = "adm";
 const PASS = "Cab@pmsp";
 
 export function LoginGate({ children }: { children: React.ReactNode }) {
+  // Start true on SSR to avoid hydration flash; client effect re-validates.
   const [ok, setOk] = useState(false);
+  const [checked, setChecked] = useState(false);
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [err, setErr] = useState("");
 
   useEffect(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem(KEY) === "1") {
-      setOk(true);
+    if (typeof window !== "undefined") {
+      const persisted =
+        localStorage.getItem(KEY) === "1" || sessionStorage.getItem(KEY) === "1";
+      if (persisted) setOk(true);
     }
+    setChecked(true);
   }, []);
 
+  if (!checked) return null;
   if (ok) return <>{children}</>;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (user.trim() === USER && pass === PASS) {
-      sessionStorage.setItem(KEY, "1");
+      localStorage.setItem(KEY, "1");
       setOk(true);
     } else {
       setErr("Usuário ou senha inválidos");
