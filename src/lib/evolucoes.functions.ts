@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type Evolucao = {
   id: number;
@@ -16,12 +17,14 @@ export type Evolucao = {
   fundamento_categoria: string | null;
 };
 
-export const listEvolucoes = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+export const listEvolucoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
   const pageSize = 1000;
   const all: Evolucao[] = [];
   for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("evolucoes_funcionais")
       .select(
         "id,matricula,nome,secretaria_nome,data_admissao,data_rescisao,rescisao_descricao,cargo_atual_nome,vinculo_nome,evolucao_cargo_nome,evolucao_data,evolucao_fundamento,fundamento_categoria",
@@ -35,4 +38,4 @@ export const listEvolucoes = createServerFn({ method: "GET" }).handler(async () 
     if (rows.length < pageSize) break;
   }
   return all;
-});
+  });
