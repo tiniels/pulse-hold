@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type Rescisao = {
   id: number;
@@ -18,12 +19,14 @@ export type Rescisao = {
   dias_permanencia: number;
 };
 
-export const listRescisoes = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+export const listRescisoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
   const pageSize = 1000;
   const all: Rescisao[] = [];
   for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("rescisoes")
       .select("*")
       .order("data_rescisao", { ascending: false })
@@ -34,4 +37,4 @@ export const listRescisoes = createServerFn({ method: "GET" }).handler(async () 
     if (rows.length < pageSize) break;
   }
   return all;
-});
+  });
