@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 function normalize(s: string) {
   return s
@@ -10,9 +11,10 @@ function normalize(s: string) {
 }
 
 export const obterFila = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: { cargoNome: string; lista?: "GERAL" | "PCD" | "MSVD" | "TODAS" }) => input)
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = context.supabase;
     const norm = normalize(data.cargoNome);
     // Fetch cargos with this normalized name
     const { data: cargos, error: cgErr } = await supabaseAdmin
@@ -80,9 +82,10 @@ export const obterFila = createServerFn({ method: "GET" })
   });
 
 export const convocarCandidato = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: { candidatoId: string; observacao?: string }) => input)
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = context.supabase;
     const { data: prev, error: pErr } = await supabaseAdmin
       .from("candidatos")
       .select("id, status")
@@ -106,6 +109,7 @@ export const convocarCandidato = createServerFn({ method: "POST" })
   });
 
 export const atualizarStatusCandidato = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     (input: {
       candidatoId: string;
@@ -113,8 +117,8 @@ export const atualizarStatusCandidato = createServerFn({ method: "POST" })
       observacao?: string;
     }) => input,
   )
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = context.supabase;
     const { data: prev } = await supabaseAdmin
       .from("candidatos")
       .select("id, status")

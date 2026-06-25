@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type Admissao = {
   id: number;
@@ -16,12 +17,14 @@ export type Admissao = {
   data_efetiva: string | null;
 };
 
-export const listAdmissoes = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+export const listAdmissoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase;
   const pageSize = 1000;
   const all: Admissao[] = [];
   for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("admissoes")
       .select("*")
       .order("data_efetiva", { ascending: true })
@@ -32,4 +35,4 @@ export const listAdmissoes = createServerFn({ method: "GET" }).handler(async () 
     if (rows.length < pageSize) break;
   }
   return all;
-});
+  });

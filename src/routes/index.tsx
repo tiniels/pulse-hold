@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { FilaConvocacaoDialog } from "@/components/FilaConvocacaoDialog";
 import { getCargoInfo, formatBRL, nivelTone } from "@/lib/cargo-info";
+import { LoginGate } from "@/components/rescisoes/LoginGate";
 
 const dashQuery = queryOptions({
   queryKey: ["dpcab", "dashboard"],
@@ -33,6 +34,7 @@ const dashQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "DP - CAB | Dashboard de Concursos e Processos Seletivos" },
@@ -41,8 +43,11 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Painel executivo do Departamento Admissional." },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(dashQuery),
-  component: Index,
+  component: () => (
+    <LoginGate>
+      <Index />
+    </LoginGate>
+  ),
   errorComponent: ({ error }) => (
     <div className="p-8 text-destructive">Erro ao carregar: {error.message}</div>
   ),
