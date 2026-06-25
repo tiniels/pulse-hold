@@ -319,6 +319,10 @@ function AdmissaoPage() {
 
   // ---------------- Drill-down ----------------
   const [openJornada, setOpenJornada] = useState<Enriched | null>(null);
+  // Generic chart drill-down: a clicked chart segment opens this modal
+  // listing the servidores that compose the aggregation.
+  const [drillAdm, setDrillAdm] = useState<{ title: string; rows: Enriched[] } | null>(null);
+  const [drillExo, setDrillExo] = useState<{ title: string; rows: Rescisao[] } | null>(null);
   const jornadaEventos = useMemo(() => {
     if (!openJornada) return [];
     const pk = normPront(openJornada.prontuario);
