@@ -628,9 +628,10 @@ function TrendLines({ data }: { data: Rescisao[] }) {
 }
 
 function YearCompare({
-  data, vinculos, secretarias, cargos,
+  data, vinculos, secretarias, cargos, aggregatedAll,
 }: {
   data: Rescisao[]; vinculos: string[]; secretarias: string[]; cargos: string[];
+  aggregatedAll: Aggregated[];
 }) {
   // Same filters except date — compare years
   const filtered = useMemo(() => data.filter((r) => {
@@ -667,11 +668,23 @@ function YearCompare({
   }, [filtered, years]);
 
   const [stacked, setStacked] = useState(false);
+  const [drill, setDrill] = useState<{ ano: string; motivo: string } | null>(null);
+  const drillRows = useMemo(() => {
+    if (!drill) return [];
+    return aggregatedAll.filter(
+      (a) =>
+        a.data_rescisao?.slice(0, 4) === drill.ano &&
+        a.motivo_categoria === drill.motivo,
+    );
+  }, [drill, aggregatedAll]);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Comparativo Anual</CardTitle>
+        <div>
+          <CardTitle>Comparativo Anual</CardTitle>
+          <p className="text-xs text-muted-foreground">Clique numa coluna para listar os servidores.</p>
+        </div>
         <Tabs value={stacked ? "stack" : "group"} onValueChange={(v) => setStacked(v === "stack")}>
           <TabsList className="h-8">
             <TabsTrigger value="group" className="text-xs">Agrupado</TabsTrigger>
@@ -689,11 +702,30 @@ function YearCompare({
               <RTooltip />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               {rows.motivos.map((m) => (
-                <Bar key={m} dataKey={m} fill={MOTIVO_COLORS[m]} stackId={stacked ? "a" : undefined} radius={stacked ? 0 : [4, 4, 0, 0]} />
+                <Bar
+                  key={m}
+                  dataKey={m}
+                  fill={MOTIVO_COLORS[m]}
+                  stackId={stacked ? "a" : undefined}
+                  radius={stacked ? 0 : [4, 4, 0, 0]}
+                  cursor="pointer"
+                  onClick={(d: any) => {
+                    const ano = d?.ano as string | undefined;
+                    if (ano) setDrill({ ano, motivo: m });
+                  }}
+                />
               ))}
             </BarChart>
           </ResponsiveContainer>
         </div>
+        {drill && (
+          <ServidoresListDialog
+            open
+            onClose={() => setDrill(null)}
+            title={`${drill.motivo} • ${drill.ano}`}
+            rows={drillRows}
+          />
+        )}
       </CardContent>
     </Card>
   );
