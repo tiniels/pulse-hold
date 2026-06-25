@@ -739,7 +739,13 @@ function ServidoresTable({ rows, onRowClick, compact, showRescisao }: { rows: En
   );
 }
 
-function OrigemPie({ data }: { data: Enriched[] }) {
+function OrigemPie({
+  data,
+  onSelect,
+}: {
+  data: Enriched[];
+  onSelect?: (name: string, rows: Enriched[]) => void;
+}) {
   const counts = new Map<string, number>();
   for (const a of data) counts.set(a.origemTipo, (counts.get(a.origemTipo) ?? 0) + 1);
   const arr = Array.from(counts.entries()).map(([name, value]) => ({ name, value }));
@@ -748,7 +754,21 @@ function OrigemPie({ data }: { data: Enriched[] }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
-        <Pie data={arr} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={(p: any) => `${p.name}: ${p.value}`}>
+        <Pie
+          data={arr}
+          dataKey="value"
+          nameKey="name"
+          cx="50%"
+          cy="50%"
+          outerRadius={80}
+          innerRadius={40}
+          label={(p: any) => `${p.name}: ${p.value}`}
+          cursor={onSelect ? "pointer" : undefined}
+          onClick={(d: any) => {
+            if (!onSelect || !d?.name) return;
+            onSelect(d.name, data.filter((a) => a.origemTipo === d.name));
+          }}
+        >
           {arr.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
         </Pie>
         <RTooltip />
@@ -756,14 +776,34 @@ function OrigemPie({ data }: { data: Enriched[] }) {
     </ResponsiveContainer>
   );
 }
-function VincPie({ data }: { data: Enriched[] }) {
+function VincPie({
+  data,
+  onSelect,
+}: {
+  data: Enriched[];
+  onSelect?: (name: string, rows: Enriched[]) => void;
+}) {
   const counts = new Map<string, number>();
   for (const a of data) counts.set(a.vinculo_categoria, (counts.get(a.vinculo_categoria) ?? 0) + 1);
   const arr = Array.from(counts.entries()).map(([name, value]) => ({ name, value }));
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
-        <Pie data={arr} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={(p: any) => `${p.name}: ${p.value}`}>
+        <Pie
+          data={arr}
+          dataKey="value"
+          nameKey="name"
+          cx="50%"
+          cy="50%"
+          outerRadius={80}
+          innerRadius={40}
+          label={(p: any) => `${p.name}: ${p.value}`}
+          cursor={onSelect ? "pointer" : undefined}
+          onClick={(d: any) => {
+            if (!onSelect || !d?.name) return;
+            onSelect(d.name, data.filter((a) => a.vinculo_categoria === d.name));
+          }}
+        >
           {arr.map((d, i) => <Cell key={i} fill={VINC_COLORS[d.name] ?? "hsl(210 10% 60%)"} />)}
         </Pie>
         <RTooltip />
