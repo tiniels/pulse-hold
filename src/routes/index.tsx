@@ -705,6 +705,24 @@ function Index() {
         onOpenChange={setFilaOpen}
         cargoNome={filaCargo}
       />
+
+      {drill && (
+        <DrillDialog<any>
+          open
+          onClose={() => setDrill(null)}
+          title={drill.title}
+          rows={drill.rows}
+          csvName={drill.title}
+          columns={[
+            { key: "numero", label: "Nº", value: (r) => r.numero ?? r.edital_numero ?? "" },
+            { key: "cargo", label: "Cargo", value: (r) => r.cargo ?? "" },
+            { key: "total_disponivel", label: "Disponíveis", value: (r) => r.total_disponivel ?? 0 },
+            { key: "homologacao_status", label: "Status", value: (r) => r.homologacao_status ?? "—" },
+            { key: "data_homologacao", label: "Homologação", value: (r) => r.data_homologacao ?? "" },
+            { key: "vencimento", label: "Vencimento", value: (r) => r.vencimento ?? r.vencimento_original ?? "" },
+          ]}
+        />
+      )}
     </div>
   );
 }
