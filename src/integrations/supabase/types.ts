@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      admissoes: {
+        Row: {
+          cargo: string | null
+          created_at: string
+          data_efetiva: string | null
+          data_header: string | null
+          id: number
+          memorando: string | null
+          nome: string
+          observacao: string | null
+          prontuario: string | null
+          secretaria: string | null
+          telefone: string | null
+          tipo_movimentacao: string | null
+          vinculo: string | null
+          vinculo_categoria: string | null
+        }
+        Insert: {
+          cargo?: string | null
+          created_at?: string
+          data_efetiva?: string | null
+          data_header?: string | null
+          id?: number
+          memorando?: string | null
+          nome: string
+          observacao?: string | null
+          prontuario?: string | null
+          secretaria?: string | null
+          telefone?: string | null
+          tipo_movimentacao?: string | null
+          vinculo?: string | null
+          vinculo_categoria?: string | null
+        }
+        Update: {
+          cargo?: string | null
+          created_at?: string
+          data_efetiva?: string | null
+          data_header?: string | null
+          id?: number
+          memorando?: string | null
+          nome?: string
+          observacao?: string | null
+          prontuario?: string | null
+          secretaria?: string | null
+          telefone?: string | null
+          tipo_movimentacao?: string | null
+          vinculo?: string | null
+          vinculo_categoria?: string | null
+        }
+        Relationships: []
+      }
       candidatos: {
         Row: {
           cargo_fila_id: string
