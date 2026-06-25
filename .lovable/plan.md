@@ -1,75 +1,81 @@
-## Escopo
 
-Construir o "Sistema de Convocação de Candidatos" sobre o DP-CAB já existente, importando automaticamente os Excels `CONCURSOS.xlsx` (20 abas CP) e `SELETIVOS.xlsx` (21 abas PS/PSS), e desabilitar o badge "Edit with Lovable".
+# Plano de Implementação — Mudar.md
 
-## 1. Banco de Dados (migration)
+O documento descreve uma transformação muito ampla (filtro global, comparador, drill-down universal, reformulação completa de `/admissao`, painel SOS dos editais, 15 mudanças estruturais por eixo). Vou implementar em **fases enxutas e entregáveis**, marcando o que **depende de dados que hoje não existem na base** para evitar inventar números.
 
-Novas tabelas (todas com RLS pública para leitura, escrita só autenticado, mesmo padrão das existentes):
+---
 
-- `concursos` — id, tipo (`CP`|`PS`), numero (`01/2020`), nome, data_realizacao, data_homologacao, data_vencimento, prorrogado_ate, sheet_origem
-- `cargos_fila` — id, concurso_id, codigo (ex `123`), nome_original, nome_normalizado, secao (`ESPECIAL`|`FINAL`)
-- `candidatos` — id, cargo_fila_id, inscricao, nome, documento, nota, classificacao, lista_tipo (`GERAL`|`PCD`|`MSVD`), data_convocacao, status (`DISPONIVEL`|`CONVOCADO`|`DESISTENTE`|`SEM_EFEITO`), observacao, ordem_linha
-- `convocacoes_log` — id, candidato_id, acao, usuario, criado_em (auditoria)
+## Fase 1 — Núcleo Temporal Global (FILTRO + COMPARADOR)
 
-Índices por (cargo_normalizado), (concurso.data_realizacao), (status).
+Aplica a **todas as páginas**: `/` (CP/PS), `/rescisoes`, `/admissao`.
 
-## 2. Parser Python (state machine)
+1. **`PeriodContext`** (`src/contexts/PeriodContext.tsx`)
+   - `dataInicio`, `dataFim` (default: 01/01/ano atual → hoje).
+   - Persistido em `localStorage` por página.
+2. **`<GlobalPeriodFilter />`** no header — dois date pickers BR (DD/MM/AAAA) + presets (Mês atual, Trimestre, YTD, 12 meses, Personalizado).
+3. **`<PeriodComparator />`** no final de cada página — botão **“+ Adicionar Período”**, N períodos coloridos, gráfico de barras lado a lado dos KPIs principais da página, normalização automática (total / média diária / variação %).
+4. **Refator dos hooks de dados**: cada `useQuery` passa a aceitar `{ dataInicio, dataFim }` e filtra server-side (server functions já existentes ganham `inputValidator` com o range).
 
-Script `scripts/import_excel.py` rodado localmente para gerar um SQL seed.
+## Fase 2 — Drill-down universal em gráficos
 
-Estados: `IDENTIFICANDO_CONCURSO → CABEÇALHO_DATAS → IDENTIFICANDO_SECAO (ESPECIAL/FINAL) → IDENTIFICANDO_CARGO → LER_CANDIDATOS`.
+Wrapper `<DrillableChart>` que envolve pizza/donut/barra/coluna do Recharts e:
+- intercepta `onClick` da fatia/coluna,
+- abre um `<RegistrosDialog>` listando os servidores/registros da agregação,
+- reusa a tabela compacta já existente em `ServidoresListDialog`.
 
-Regras de detecção:
-- Linha começa com "CONCURSO PÚBLICO"/"PROCESSO SELETIVO" → novo concurso.
-- Linha "Real: dd/mm/aaaa Hom: dd/mm/aaaa" → datas (regex).
-- "CARGOS PRORROGADOS DE dd/mm/aaaa" → prorrogado_ate.
-- "CLASSIFICAÇÃO ESPECIAL..." → secao=ESPECIAL; "CLASSIFICAÇÃO FINAL" → secao=FINAL.
-- "CARGO NNN - NOME" → novo cargo (codigo + nome).
-- "CONVOCAR PCD" / "CONVOCAR MSVD" → marca próximas linhas como PCD/MSVD até a próxima linha de marcador ou fim de cargo.
-- Linhas de header "INSCRIÇÃO | NOME ..." → ignora.
-- Linhas com inscrição numérica → candidato.
+Aplicado a todos os gráficos de `/rescisoes` e `/admissao`.
 
-Normalização do nome: remove `"CARGO N -"`, trim, upper, sem acento.
+## Fase 3 — Reformulação de `/admissao` (linguagem formal + arquitetura em camadas)
 
-Tratamento de observações:
-- "SEM EFEITO" / "RETORNA PARA LISTA GERAL" → lista_tipo=GERAL, status=DISPONIVEL.
-- "JÁ CONVOCADO" + data → status=CONVOCADO.
-- Nome contém "(PCD)" → força lista_tipo=PCD.
-- data_convocacao preenchida e válida → status=CONVOCADO; vazia → DISPONIVEL.
-- Erros (#VALUE!) → ignora data, mantém DISPONIVEL com observação.
+- **Cabeçalho**: “Painel de Monitoramento de Movimentação e Sucessão de Pessoal — DP-CAB | N registros | Período: …”.
+- **Renomeação completa** dos KPIs, abas, cards de alerta, colunas e badges conforme tabelas do .md (Variação Líquida, Taxa de Reposição, Aproveitamento de Servidores Internos, Desligamento Precoce, Reingresso, etc.).
+- **Camadas de decisão** (Shneiderman):
+  - Camada 1 — KPIs sempre visíveis.
+  - Camada 2 — abas (Estabilidade, Atrito, Talentos, Eficiência, Risco).
+  - Camada 3 — tabelas colapsadas sob “Expandir detalhamento”.
+- **Balanço Patrimonial de Pessoal**: substitui o card Saldo Líquido por componente com Entradas × Saídas e sparkline 12 meses (usa `admissoes` + `rescisoes`).
+- **Funil de Admissões**: usando os estágios que conseguimos derivar (Admitidos → Em estágio probatório → Estáveis), com gargalos.
+- **Curva de Retenção (Kaplan-Meier simplificado)**: dias entre posse e exoneração da coorte do período.
+- **Reingresso contextualizado**: classifica os 173 por modalidade derivável dos dados (Novo concurso vs. Mesma matrícula recorrente).
+- **Painel de Eficiência por Secretaria**: tabela ranking (Admissões, Vacância, Retenção, Score).
 
-Saída: `supabase/migrations/<ts>_seed_concursos.sql` com INSERTs em lote. Importação roda via migration tool (uma só) com TRUNCATE+INSERT para idempotência.
+## Fase 4 — Melhorias do painel CP/PS (`/`)
 
-## 3. Server Functions (TanStack)
+- **3 Views/Abas**: `SOS (≤30 dias) | Planejamento (30–180) | Auditoria`.
+- **Semáforo de Validade** nos cards de edital (🔴 🟡 🟢 ⚪).
+- **Cards de Alerta horizontais** substituindo a tabela longa na view SOS.
+- **Timeline Gantt** dos vencimentos nos próximos 12 meses.
+- **KPI “Risco de Apagão”** = vagas em aberto ÷ candidatos disponíveis (por secretaria).
+- **Funil de Conversão do Certame**: Vagas → Inscritos → Aprovados → Nomeados → Efetivados (até onde os dados permitirem; etapas ausentes ficam vazias com aviso).
+- **Mapa de calor Secretaria × Status** e **Ranking Top 5 críticas**.
 
-`src/lib/convocacao.functions.ts`:
-- `listarCargosAgrupados()` — devolve cargos únicos com agregados (total disponível, total convocado, concursos ativos).
-- `obterFila({ cargoNormalizado, lista? })` — JOIN candidatos+cargos_fila+concursos, filtra `status='DISPONIVEL'`, ordena por `concursos.data_realizacao ASC, lista_tipo (GERAL,PCD,MSVD), classificacao ASC`. Marca de qual concurso vem.
-- `convocarCandidato({ candidatoId })` (auth) — UPDATE status=CONVOCADO, INSERT log.
-- `estatisticasCargo({ cargoNormalizado })`.
+## Fase 5 — Itens que precisam de dado novo (fica como TODO/placeholder honesto)
 
-## 4. UI
+Vou criar os componentes com **estado “Dados não disponíveis — requer importação de …”** em vez de inventar números:
 
-- Tabela CP/PS existente: clique no nome do cargo abre `Dialog` "Fila de Convocação".
-- Dialog mostra Tabs `Geral | PcD | MSVD`, cards com posição, nome, nota, classificação, badge "Vindo do CP 03/2022", botão **Convocar**.
-- Após convocar: invalida query, próximo aparece automaticamente.
-- Sem nova rota admin (importação roda por migration).
+- **Índice de Envelhecimento / Aposentadoria** → precisa `data_nascimento` dos servidores.
+- **Motivos declarados de exoneração** (remuneração, clima…) → precisa coluna `motivo` semântica.
+- **Satisfação 90 dias / Programa de integração** → precisa pesquisa interna.
+- **Custos (R$ 4.200, R$ 2.1M, R$ 8.7M)** → precisa parâmetros de RH.
+- **Plano de Sucessão por cargo** → precisa cadastro de sucessores.
+- **Perícia médica / Lotação como etapas do funil** → precisa workflow do RH.
 
-## 5. Badge Lovable
-
-Desabilitar via `publish_settings--set_badge_visibility`.
+---
 
 ## Detalhes técnicos
 
-- Parser roda no sandbox; gera SQL com `gen_random_uuid()` e usa CTE para mapear FKs por número de concurso + código de cargo.
-- Migration única ~3-5 MB de INSERTs (≈ 40 sheets × ~100 candidatos). Se ficar grande demais, divido em 2 migrations (CP e PS).
-- Server functions usam `requireSupabaseAuth` apenas para mutações; leitura é pública via `supabaseAdmin` dentro do handler.
-- Não toco em `src/integrations/supabase/*` auto-gerados.
+- Stack atual já tem TanStack Start + Query + Recharts + shadcn — toda a Fase 1–4 cabe sem novas dependências (exceto `date-fns` se ainda não estiver, e talvez `react-day-picker` que já vem com shadcn).
+- Filtragem por período é feita nas server functions (`.gte('data', inicio).lte('data', fim)`) — sem quebrar RLS atual.
+- Comparador faz N queries paralelas via `useQueries`, sem mudança de schema.
+- Drill-down não precisa de schema novo: reaproveita as listas já carregadas.
+- Nenhuma migration nova é necessária para Fases 1–4.
 
-## Fora de escopo
+---
 
-- Painel `/admin/importar-excel` com upload (mencionado como opcional) — fica para próxima iteração.
-- Swagger/Postman — APIs ficam documentadas no código.
-- Deploy/migrations rodam automaticamente pelo Lovable Cloud.
+## O que peço para confirmar antes de começar
 
-Confirma que posso seguir?
+1. **Posso seguir nessa ordem (1→4)**, deixando a Fase 5 marcada como “requer dados adicionais”?
+2. **Quer que eu entregue tudo de uma vez** (commit grande) **ou fase por fase** (cada fase em uma rodada para você validar visualmente)?
+3. Os **valores monetários e metas** citados no .md (R$ 4.200/integração, meta 85% retenção, etc.) são **fixos institucionais** ou devem ser configuráveis numa tela de parâmetros?
+
+Confirmando isso eu começo já pela Fase 1.
