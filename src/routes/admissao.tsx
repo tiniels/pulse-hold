@@ -632,6 +632,45 @@ function AdmissaoPage() {
           eventos={jornadaEventos as any}
         />
       )}
+
+      {drillAdm && (
+        <DrillDialog<Enriched>
+          open
+          onClose={() => setDrillAdm(null)}
+          title={drillAdm.title}
+          rows={drillAdm.rows}
+          csvName={drillAdm.title}
+          onRowClick={(r) => setOpenJornada(r)}
+          columns={[
+            { key: "prontuario", label: "Prontuário", value: (r) => r.prontuario ?? "" },
+            { key: "nome", label: "Nome", value: (r) => r.nome },
+            { key: "cargo", label: "Cargo", value: (r) => r.cargo ?? "" },
+            { key: "secretaria", label: "Secretaria", value: (r) => r.secretaria ?? "" },
+            { key: "vinculo_categoria", label: "Vínculo", value: (r) => r.vinculo_categoria },
+            { key: "origemTipo", label: "Origem", value: (r) => r.origemTipo },
+            { key: "data_efetiva", label: "Data Admissão", value: (r) => r.data_efetiva ?? "" },
+          ]}
+        />
+      )}
+
+      {drillExo && (
+        <DrillDialog<Rescisao>
+          open
+          onClose={() => setDrillExo(null)}
+          title={drillExo.title}
+          rows={drillExo.rows}
+          csvName={drillExo.title}
+          columns={[
+            { key: "matricula", label: "Matrícula", value: (r) => r.matricula ?? "" },
+            { key: "nome", label: "Nome", value: (r) => r.nome },
+            { key: "cargo_nome", label: "Cargo", value: (r) => r.cargo_nome },
+            { key: "secretaria_nome", label: "Secretaria", value: (r) => r.secretaria_nome },
+            { key: "vinculo_categoria", label: "Vínculo", value: (r) => r.vinculo_categoria },
+            { key: "motivo_categoria", label: "Motivo", value: (r) => (r as any).motivo_categoria ?? "" },
+            { key: "data_rescisao", label: "Data Rescisão", value: (r) => r.data_rescisao },
+          ]}
+        />
+      )}
     </div>
   );
 }
