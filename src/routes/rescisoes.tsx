@@ -8,6 +8,9 @@ import { LoginGate } from "@/components/rescisoes/LoginGate";
 import { JornadaTimeline } from "@/components/rescisoes/JornadaTimeline";
 import { EvolucaoAnalysis } from "@/components/rescisoes/EvolucaoAnalysis";
 import { ServidoresListDialog } from "@/components/rescisoes/ServidoresListDialog";
+import { GlobalPeriodFilter } from "@/components/period/GlobalPeriodFilter";
+import { PeriodComparator, type MetricResult } from "@/components/period/PeriodComparator";
+import { usePeriod } from "@/contexts/PeriodContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -108,8 +111,14 @@ function RescisoesPage() {
     return { min, max };
   }, [data]);
 
-  // Filters
-  const [dateRange, setDateRange] = useState<DateRange>({});
+  // Filters — date range is the GLOBAL period (shared across pages)
+  const { period, setPeriod } = usePeriod();
+  const dateRange: DateRange = {
+    from: period.from ?? undefined,
+    to: period.to ?? undefined,
+  };
+  const setDateRange = (r: DateRange) =>
+    setPeriod({ from: r.from ?? null, to: r.to ?? null });
   const [secretarias, setSecretarias] = useState<string[]>([]);
   const [cargos, setCargos] = useState<string[]>([]);
   const [vinculos, setVinculos] = useState<string[]>(["Estatutário"]);
@@ -151,7 +160,7 @@ function RescisoesPage() {
   }, [aggregatedAll, dateRange, vinculos, secretarias, cargos, evolStatus, tempoEvol]);
 
   const clearAll = () => {
-    setDateRange({});
+    setPeriod({ from: null, to: null });
     setSecretarias([]);
     setCargos([]);
     setVinculos(["Estatutário"]);
@@ -205,9 +214,12 @@ function RescisoesPage() {
               {filtered.length.toLocaleString("pt-BR")} registros • Vínculo padrão: Estatutário
             </p>
           </div>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/"><ArrowLeft className="h-4 w-4" /> Voltar</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <GlobalPeriodFilter />
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/"><ArrowLeft className="h-4 w-4" /> Voltar</Link>
+            </Button>
+          </div>
         </div>
 
         <KpiCards data={filtered} dateRange={dateRange} all={data} />
@@ -227,6 +239,33 @@ function RescisoesPage() {
         <CargoDeepDive data={filtered} allCargos={allCargos} />
 
         <DetailsTable data={filtered} onRowClick={setOpenJornada} />
+
+        <PeriodComparator
+          compute={(fromISO, toISO) => {
+            const inRange = (d: string | null | undefined) =>
+              !!d && d >= fromISO && d <= toISO;
+            const rs = data.filter((r) => inRange(r.data_rescisao));
+            const ests = rs.filter(
+              (r) => (r.vinculo_categoria || "").toLowerCase().includes("estatut"),
+            );
+            const aposentados = rs.filter((r) =>
+              ((r as any).motivo_categoria || (r as any).motivo_descricao || "")
+                .toLowerCase()
+                .includes("aposent"),
+            );
+            const exonerados = rs.filter((r) =>
+              ((r as any).motivo_categoria || (r as any).motivo_descricao || "")
+                .toLowerCase()
+                .includes("exoner"),
+            );
+            return [
+              { label: "Total Rescisões", value: rs.length },
+              { label: "Estatutários", value: ests.length },
+              { label: "Aposentadorias", value: aposentados.length },
+              { label: "Exonerações", value: exonerados.length },
+            ] as MetricResult[];
+          }}
+        />
       </div>
 
       {openJornada && (
