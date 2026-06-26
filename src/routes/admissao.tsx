@@ -16,15 +16,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { DrillDialog, type DrillColumn } from "@/components/charts/DrillDialog";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend,
-  PieChart, Pie, Cell, Sankey, Layer, Rectangle,
+  PieChart, Pie, Cell, Sankey, Layer, Rectangle, LineChart, Line, AreaChart, Area,
+  ScatterChart, Scatter, ZAxis, ReferenceLine,
 } from "recharts";
 import {
   ArrowLeft, Search, AlertTriangle, RefreshCw, TrendingUp, UserPlus,
   Users, Sparkles, Repeat, Building2, Briefcase, Download, FileText,
+  Scale, Hourglass, ShieldAlert, Activity, GraduationCap, ArrowRight, Target,
 } from "lucide-react";
 
 const normPront = (s: string | null | undefined) => (s ?? "").replace(/\D+/g, "");
