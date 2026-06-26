@@ -1047,7 +1047,12 @@ function AdmissaoPage() {
                 {continuidadeServico.length === 0 ? <Empty /> : continuidadeServico.map((c) => {
                   const cor = c.vacancia > 90 ? "bg-rose-500" : c.vacancia > 60 ? "bg-amber-500" : "bg-emerald-500";
                   return (
-                    <div key={c.secretaria} className="space-y-1">
+                    <button
+                      type="button"
+                      key={c.secretaria}
+                      onClick={() => setDrillAdm({ title: `Continuidade — ${c.secretaria}`, rows: c.rows })}
+                      className="w-full text-left space-y-1 hover:bg-accent/40 rounded p-1 cursor-pointer transition"
+                    >
                       <div className="flex justify-between text-[11px]">
                         <span>{c.secretaria}</span>
                         <span className={`font-mono ${c.vacancia > 90 ? "text-rose-600" : c.vacancia > 60 ? "text-amber-600" : "text-emerald-600"}`}>{c.vacancia} dias</span>
@@ -1055,7 +1060,7 @@ function AdmissaoPage() {
                       <div className="h-2 rounded bg-muted overflow-hidden">
                         <div className={`h-full ${cor}`} style={{ width: `${Math.min(100, (c.vacancia / 200) * 100)}%` }} />
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
                 <div className="pt-2 border-t text-[11px] text-muted-foreground">
