@@ -306,6 +306,7 @@ export type Database = {
         Row: {
           cargo_atual_codigo: number | null
           cargo_atual_nome: string | null
+          cargo_conciliacao: string | null
           created_at: string
           data_admissao: string | null
           data_rescisao: string | null
@@ -319,14 +320,17 @@ export type Database = {
           nome: string
           rescisao_codigo: number | null
           rescisao_descricao: string | null
+          secretaria: string | null
           secretaria_codigo: number | null
           secretaria_nome: string | null
+          sigla: string | null
           vinculo_codigo: number | null
           vinculo_nome: string | null
         }
         Insert: {
           cargo_atual_codigo?: number | null
           cargo_atual_nome?: string | null
+          cargo_conciliacao?: string | null
           created_at?: string
           data_admissao?: string | null
           data_rescisao?: string | null
@@ -340,14 +344,17 @@ export type Database = {
           nome: string
           rescisao_codigo?: number | null
           rescisao_descricao?: string | null
+          secretaria?: string | null
           secretaria_codigo?: number | null
           secretaria_nome?: string | null
+          sigla?: string | null
           vinculo_codigo?: number | null
           vinculo_nome?: string | null
         }
         Update: {
           cargo_atual_codigo?: number | null
           cargo_atual_nome?: string | null
+          cargo_conciliacao?: string | null
           created_at?: string
           data_admissao?: string | null
           data_rescisao?: string | null
@@ -361,8 +368,10 @@ export type Database = {
           nome?: string
           rescisao_codigo?: number | null
           rescisao_descricao?: string | null
+          secretaria?: string | null
           secretaria_codigo?: number | null
           secretaria_nome?: string | null
+          sigla?: string | null
           vinculo_codigo?: number | null
           vinculo_nome?: string | null
         }
