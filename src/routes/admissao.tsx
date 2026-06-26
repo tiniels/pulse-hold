@@ -1543,3 +1543,74 @@ function SankeyNode({ x, y, width, height, index, payload }: any) {
     </Layer>
   );
 }
+
+function Empty() {
+  return <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Sem dados para os filtros atuais.</div>;
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border bg-muted/30 p-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-lg font-bold mt-1">{value}</p>
+    </div>
+  );
+}
+
+function Componente({ nome, valor, meta, formato = "pct" }: { nome: string; valor: number; meta: number | null; formato?: "pct" | "num" }) {
+  const display = formato === "pct" ? `${valor}%` : valor.toLocaleString("pt-BR");
+  const pct = formato === "pct" ? valor : Math.min(100, valor);
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-[11px]">
+        <span>{nome}</span>
+        <span className="font-mono">{display}{meta != null && <span className="text-muted-foreground ml-2">/ meta {meta}{formato === "pct" ? "%" : ""}</span>}</span>
+      </div>
+      <Progress value={pct} className="h-1.5" />
+    </div>
+  );
+}
+
+function AlertCardFormal({ titulo, valor, descricao }: { titulo: string; valor: number; descricao: string }) {
+  return (
+    <Card className="border-rose-500/30 bg-rose-500/5">
+      <CardContent className="p-5">
+        <div className="flex items-start gap-4">
+          <AlertTriangle className="h-6 w-6 text-rose-600 mt-1" />
+          <div className="flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-rose-700 dark:text-rose-300">{titulo}</p>
+            <p className="text-4xl font-bold mt-2">{valor.toLocaleString("pt-BR")}</p>
+            <p className="text-xs text-muted-foreground mt-2 max-w-2xl">{descricao}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BalancoColuna({ titulo, total, linhas, tom }: { titulo: string; total: number; linhas: { nome: string; qtd: number }[]; tom: "emerald" | "rose" }) {
+  const cor = tom === "emerald" ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300";
+  const barra = tom === "emerald" ? "bg-emerald-500/70" : "bg-rose-500/70";
+  const max = Math.max(1, ...linhas.map((l) => l.qtd));
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between">
+        <p className={`text-[10px] uppercase tracking-wider font-semibold ${cor}`}>{titulo}</p>
+        <p className="text-[10px] text-muted-foreground">Total: <span className="font-bold">{total.toLocaleString("pt-BR")}</span></p>
+      </div>
+      <div className="space-y-1.5">
+        {linhas.length === 0 ? <p className="text-[11px] text-muted-foreground">Sem dados.</p> : linhas.map((l) => (
+          <div key={l.nome} className="space-y-0.5">
+            <div className="flex justify-between text-[11px]">
+              <span className="truncate pr-2">{l.nome}</span>
+              <span className="font-mono">{l.qtd}</span>
+            </div>
+            <div className="h-1.5 bg-muted rounded overflow-hidden">
+              <div className={`h-full ${barra}`} style={{ width: `${(l.qtd / max) * 100}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
