@@ -154,3 +154,26 @@
     color: var(--color-foreground);
   }
 }
+
+/* Global brand background image (parallax fixed) */
+html, body {
+  min-height: 100%;
+}
+body {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.82), rgba(255,255,255,0.82)),
+    url("/__l5e/assets-v1/0c309fad-286e-4fb3-ad0b-3d71a777e7d2/cab-background.png");
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  transition: background-color 0.3s ease;
+}
+.dark body {
+  background-image:
+    linear-gradient(rgba(15,15,25,0.85), rgba(15,15,25,0.85)),
+    url("/__l5e/assets-v1/0c309fad-286e-4fb3-ad0b-3d71a777e7d2/cab-background.png");
+}
+@media (max-width: 768px) {
+  body { background-attachment: scroll; }
+}
