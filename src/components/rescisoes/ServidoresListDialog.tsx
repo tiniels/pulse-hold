@@ -41,7 +41,7 @@ export function ServidoresListDialog({
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
-  const [sortKey, setSortKey] = useState<SortKey>("data_rescisao");
+  const [sortKey, setSortKey] = useState<SortKey>("nome");
   const [sortAsc, setSortAsc] = useState(true);
 
   const filtered = useMemo(() => {
@@ -121,12 +121,11 @@ export function ServidoresListDialog({
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead><SortBtn label="Nome" k="nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
-                <TableHead><SortBtn label="Cargo" k="cargo_nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
-                <TableHead><SortBtn label="Secretaria" k="secretaria_nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
-                <TableHead><SortBtn label="Admissão" k="data_admissao" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
-                <TableHead><SortBtn label="Rescisão" k="data_rescisao" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
-                <TableHead><SortBtn label="Motivo" k="motivo_categoria" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
+                <TableHead><SortBtn label="Prontuário" k="matricula" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
+                <TableHead><SortBtn label="Nome do Servidor" k="nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
+                <TableHead><SortBtn label="Cargo / Função" k="cargo_nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
+                <TableHead><SortBtn label="Secretaria de Lotação" k="secretaria_nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
+                <TableHead><SortBtn label="Natureza do Vínculo Atual" k="vinculo_categoria" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -136,16 +135,15 @@ export function ServidoresListDialog({
                   className={onRowClick ? "cursor-pointer hover:bg-accent/50" : ""}
                   onClick={() => onRowClick?.(r)}
                 >
+                  <TableCell className="text-xs whitespace-nowrap font-mono">{r.matricula ?? "—"}</TableCell>
                   <TableCell className="text-xs font-medium max-w-[240px] truncate">{r.nome}</TableCell>
                   <TableCell className="text-xs max-w-[200px] truncate">{r.cargo_nome}</TableCell>
                   <TableCell className="text-xs max-w-[180px] truncate">{r.secretaria_nome}</TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">{fmt(r.data_admissao)}</TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">{fmt(r.data_rescisao)}</TableCell>
-                  <TableCell className="text-xs"><Badge variant="outline">{r.motivo_categoria}</Badge></TableCell>
+                  <TableCell className="text-xs"><Badge variant="outline">{r.vinculo_categoria}</Badge></TableCell>
                 </TableRow>
               ))}
               {pageRows.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhum servidor</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">Nenhum servidor</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
