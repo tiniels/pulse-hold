@@ -807,12 +807,16 @@ function AdmissaoPage() {
                 </CardHeader>
                 <CardContent className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={envelhecimento.buckets}>
+                    <BarChart data={envelhecimento.buckets} onClick={(s: any) => {
+                      const label = s?.activePayload?.[0]?.payload?.label;
+                      const b = envelhecimento.buckets.find((x) => x.label === label);
+                      if (b && b.rows.length) setDrillExo({ title: `Tempo de Casa — ${b.label}`, rows: b.rows });
+                    }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 10 }} />
                       <RTooltip />
-                      <Bar dataKey="qtd" name="Servidores" fill="hsl(280 65% 60%)" />
+                      <Bar dataKey="qtd" name="Servidores" fill="hsl(280 65% 60%)" cursor="pointer" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
