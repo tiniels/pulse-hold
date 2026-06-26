@@ -1361,7 +1361,7 @@ function FilterSelect({ value, onChange, placeholder, options }: { value: string
   );
 }
 
-function Kpi({ title, value, sub, icon, accent }: { title: string; value: string; sub?: string; icon: React.ReactNode; accent: "emerald" | "sky" | "amber" | "violet" | "rose" }) {
+function Kpi({ title, value, sub, icon, accent, meta, actual }: { title: string; value: string; sub?: string; icon: React.ReactNode; accent: "emerald" | "sky" | "amber" | "violet" | "rose"; meta?: number; actual?: number }) {
   const cls = {
     emerald: "from-emerald-500/10 to-emerald-500/0 text-emerald-700 dark:text-emerald-300",
     sky: "from-sky-500/10 to-sky-500/0 text-sky-700 dark:text-sky-300",
@@ -1369,6 +1369,9 @@ function Kpi({ title, value, sub, icon, accent }: { title: string; value: string
     violet: "from-violet-500/10 to-violet-500/0 text-violet-700 dark:text-violet-300",
     rose: "from-rose-500/10 to-rose-500/0 text-rose-700 dark:text-rose-300",
   }[accent];
+  const metaStatus = meta != null && actual != null
+    ? (actual >= meta ? "🟢" : actual >= meta * 0.7 ? "🟡" : "🔴")
+    : null;
   return (
     <Card className={`bg-gradient-to-br ${cls} border`}>
       <CardContent className="p-3">
@@ -1378,6 +1381,9 @@ function Kpi({ title, value, sub, icon, accent }: { title: string; value: string
         </div>
         <p className="text-2xl font-bold mt-1">{value}</p>
         {sub && <p className="text-[10px] opacity-70 mt-0.5">{sub}</p>}
+        {meta != null && (
+          <p className="text-[10px] opacity-80 mt-1">{metaStatus} Meta: {meta}%</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -1400,7 +1406,7 @@ function AlertCard({ title, value, description }: { title: string; value: number
   );
 }
 
-function ServidoresTable({ rows, onRowClick, compact, showRescisao }: { rows: Enriched[]; onRowClick: (r: Enriched) => void; compact?: boolean; showRescisao?: boolean }) {
+function ServidoresTable({ rows, onRowClick, compact: _compact, showRescisao, reingresso }: { rows: Enriched[]; onRowClick: (r: Enriched) => void; compact?: boolean; showRescisao?: boolean; reingresso?: boolean }) {
   const [page, setPage] = useState(0);
   const pageSize = 20;
   const slice = rows.slice(page * pageSize, (page + 1) * pageSize);
@@ -1410,14 +1416,14 @@ function ServidoresTable({ rows, onRowClick, compact, showRescisao }: { rows: En
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[80px]">Pront.</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead>Cargo</TableHead>
-              <TableHead>Secretaria</TableHead>
-              <TableHead>Vínculo</TableHead>
-              <TableHead>Origem</TableHead>
-              <TableHead>Data</TableHead>
-              {showRescisao && <TableHead>Saída</TableHead>}
+              <TableHead className="w-[80px]">Prontuário</TableHead>
+              <TableHead>Nome do Servidor</TableHead>
+              <TableHead>Cargo / Função</TableHead>
+              <TableHead>Secretaria de Lotação</TableHead>
+              <TableHead>{reingresso ? "Natureza do Vínculo Atual" : "Natureza do Vínculo"}</TableHead>
+              <TableHead>{reingresso ? "Modalidade de Desligamento Anterior" : "Forma de Ingresso"}</TableHead>
+              <TableHead>{reingresso ? "Data do Reingresso" : "Data de Posse"}</TableHead>
+              {showRescisao && <TableHead>{reingresso ? "Data do Desligamento Anterior" : "Data de Exoneração"}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -1441,7 +1447,7 @@ function ServidoresTable({ rows, onRowClick, compact, showRescisao }: { rows: En
       </div>
       {rows.length > pageSize && (
         <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">{rows.length} registros • página {page + 1} de {Math.ceil(rows.length / pageSize)}</span>
+          <span className="text-muted-foreground">Total: {rows.length} registros | Exibindo página {page + 1} de {Math.ceil(rows.length / pageSize)}</span>
           <div className="flex gap-1">
             <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Anterior</Button>
             <Button size="sm" variant="outline" disabled={(page + 1) * pageSize >= rows.length} onClick={() => setPage((p) => p + 1)}>Próxima</Button>
