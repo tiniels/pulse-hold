@@ -909,6 +909,14 @@ function CargoDeepDive({ data, allCargos }: { data: Rescisao[]; allCargos: strin
           </div>
         )}
       </CardContent>
+      {motivoSel && (
+        <ServidoresListDialog
+          open
+          onClose={() => setMotivoSel(null)}
+          title={`${cargo} — Motivo: ${motivoSel}`}
+          rows={data.filter((r) => r.motivo_categoria === motivoSel) as unknown as Aggregated[]}
+        />
+      )}
     </Card>
   );
 }
