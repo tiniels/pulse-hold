@@ -741,6 +741,7 @@ function CargoDeepDive({ data, allCargos }: { data: Rescisao[]; allCargos: strin
   const [cargo, setCargo] = useState<string>("");
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [motivoSel, setMotivoSel] = useState<string | null>(null);
 
   const cargosDisponiveis = useMemo(() => {
     const s = new Set<string>();
@@ -857,7 +858,15 @@ function CargoDeepDive({ data, allCargos }: { data: Rescisao[]; allCargos: strin
               <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={stats.motivoChart} dataKey="value" nameKey="name" innerRadius={40} outerRadius={70}>
+                    <Pie
+                      data={stats.motivoChart}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={40}
+                      outerRadius={70}
+                      cursor="pointer"
+                      onClick={(d: any) => d?.name && setMotivoSel(d.name)}
+                    >
                       {stats.motivoChart.map((e) => <Cell key={e.name} fill={e.fill} />)}
                     </Pie>
                     <RTooltip />
