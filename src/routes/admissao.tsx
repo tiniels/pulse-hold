@@ -681,9 +681,9 @@ function AdmissaoPage() {
           <div>
             <div className="flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-primary" />
-              <h1 className="text-base font-bold">Painel de Inteligência de Movimentação & Sucessão</h1>
+              <h1 className="text-base font-bold">Painel de Monitoramento de Movimentação e Sucessão de Pessoal</h1>
             </div>
-            <p className="text-xs text-muted-foreground">DP - CAB • {filtered.length.toLocaleString("pt-BR")} movimentações em análise</p>
+            <p className="text-xs text-muted-foreground">Departamento de Administração de Pessoal — Central de Administração de Benefícios | {filtered.length.toLocaleString("pt-BR")} registros de movimentação analisados</p>
           </div>
           <div className="flex items-center gap-2">
             <GlobalPeriodFilter />
@@ -696,47 +696,483 @@ function AdmissaoPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar nome, prontuário, cargo…" className="h-8 pl-8 text-xs" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome, prontuário ou cargo…" className="h-8 pl-8 text-xs" />
             </div>
-            <FilterSelect value={vinculo} onChange={setVinculo} placeholder="Vínculo" options={Object.keys(VINC_COLORS)} />
-            <FilterSelect value={tipo} onChange={setTipo} placeholder="Tipo" options={["Admissão", "Alteração de Função"]} />
-            <FilterSelect value={origem} onChange={setOrigem} placeholder="Origem" options={["Externo", "Ex-Efetivo", "Ex-Estagiário", "Ex-Comissionado", "Ex-Contrato", "Readmissão"]} />
-            <FilterSelect value={secretaria} onChange={setSecretaria} placeholder="Secretaria" options={secretarias} />
+            <FilterSelect value={vinculo} onChange={setVinculo} placeholder="Natureza do Vínculo" options={Object.keys(VINC_COLORS)} />
+            <FilterSelect value={tipo} onChange={setTipo} placeholder="Tipo de Movimentação" options={["Admissão", "Alteração de Função"]} />
+            <FilterSelect value={origem} onChange={setOrigem} placeholder="Forma de Ingresso" options={["Externo", "Ex-Efetivo", "Ex-Estagiário", "Ex-Comissionado", "Ex-Contrato", "Readmissão"]} />
+            <FilterSelect value={secretaria} onChange={setSecretaria} placeholder="Secretaria de Lotação" options={secretarias} />
             <Button variant="outline" size="sm" className="h-8" onClick={() => { setSearch(""); setSecretaria("__all"); setVinculo("__all"); setOrigem("__all"); setTipo("__all"); }}>
-              <RefreshCw className="h-3 w-3" /> Limpar
+              <RefreshCw className="h-3 w-3" /> Limpar Filtros
             </Button>
             <Button variant="outline" size="sm" className="h-8" onClick={() => exportCsv(filtered, `admissoes_${new Date().toISOString().slice(0, 10)}.csv`)}>
-              <Download className="h-3 w-3" /> Exportar
+              <Download className="h-3 w-3" /> Exportar Relatório
             </Button>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* KPIs */}
+        {/* CAMADA 1 — Visão Executiva (KPIs principais) */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <Kpi title="Total Admitidos" value={kpis.totalAdm.toLocaleString("pt-BR")} icon={<Users className="h-4 w-4" />} accent="emerald" />
-          <Kpi title="Saldo Líquido" value={(kpis.saldo > 0 ? "+" : "") + kpis.saldo.toLocaleString("pt-BR")}
-               sub={`${kpis.exonsPeriodo} exonerados`} icon={<TrendingUp className="h-4 w-4" />}
+          <Kpi title="Total de Admissões no Período" value={kpis.totalAdm.toLocaleString("pt-BR")} icon={<Users className="h-4 w-4" />} accent="emerald" />
+          <Kpi title="Variação Líquida do Quadro Funcional" value={(kpis.saldo > 0 ? "+" : "") + kpis.saldo.toLocaleString("pt-BR")}
+               sub={`${kpis.exonsPeriodo} desligamentos`} icon={<Scale className="h-4 w-4" />}
                accent={kpis.saldo >= 0 ? "emerald" : "rose"} />
-          <Kpi title="Reposição de Efetivos" value={kpis.reposicao == null ? "—" : `${kpis.reposicao.toFixed(0)}%`}
-               sub={`${kpis.novosEfetivos} novos efetivos`} icon={<RefreshCw className="h-4 w-4" />} accent="sky" />
-          <Kpi title="Prata da Casa" value={`${kpis.prataPerc.toFixed(0)}%`}
-               sub={`${kpis.prataCasa} ex-internos viraram efetivos`} icon={<Sparkles className="h-4 w-4" />} accent="amber" />
-          <Kpi title="Vacância Média" value={kpis.vacMedia == null ? "—" : `${kpis.vacMedia}d`}
-               sub="Saída → Substituto" icon={<Briefcase className="h-4 w-4" />} accent="violet" />
+          <Kpi title="Taxa de Reposição de Cargos Efetivos" value={kpis.reposicao == null ? "—" : `${kpis.reposicao.toFixed(0)}%`}
+               sub={`${kpis.novosEfetivos} servidores efetivos nomeados`} icon={<RefreshCw className="h-4 w-4" />} accent="sky"
+               meta={85} actual={kpis.reposicao ?? 0} />
+          <Kpi title="Aproveitamento de Servidores Internos" value={`${kpis.prataPerc.toFixed(0)}%`}
+               sub={`${kpis.prataCasa} servidores reaproveitados`} icon={<Sparkles className="h-4 w-4" />} accent="amber"
+               meta={20} actual={kpis.prataPerc} />
+          <Kpi title="Tempo Médio de Vacância" value={kpis.vacMedia == null ? "—" : `${kpis.vacMedia} dias`}
+               sub="Saída do titular → posse do substituto" icon={<Hourglass className="h-4 w-4" />} accent="violet" />
         </div>
 
-        <Tabs defaultValue="transicao" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="transicao">Transição de Carreira</TabsTrigger>
-            <TabsTrigger value="secretaria">Secretarias & Cargos</TabsTrigger>
-            <TabsTrigger value="alertas">Alertas de Sucessão</TabsTrigger>
-            <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+        {/* KPIs adicionais — Estabilidade Estrutural */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Kpi title="Taxa de Retenção (12 meses)" value={`${acolhimento.retencao12}%`} sub="Servidores efetivos retidos após 12 meses de posse"
+               icon={<Activity className="h-4 w-4" />} accent="emerald" meta={85} actual={acolhimento.retencao12} />
+          <Kpi title="Índice de Encarreiramento Interno" value={`${mobilidade.taxa}%`} sub="Movimentações originadas dentro do quadro"
+               icon={<GraduationCap className="h-4 w-4" />} accent="sky" meta={15} actual={mobilidade.taxa} />
+          <Kpi title="Índice de Acolhimento Institucional" value={`${acolhimento.score}/100`} sub={`${acolhimento.integrados} servidores integrados no período`}
+               icon={<Target className="h-4 w-4" />} accent="amber" meta={80} actual={acolhimento.score} />
+        </div>
+
+        {/* CAMADA 2 — Painéis analíticos */}
+        <Tabs defaultValue="estabilidade" className="space-y-4">
+          <TabsList className="flex flex-wrap h-auto">
+            <TabsTrigger value="estabilidade">Estabilidade Estrutural</TabsTrigger>
+            <TabsTrigger value="atrito">Diagnóstico de Atrito</TabsTrigger>
+            <TabsTrigger value="talentos">Mapeamento de Talentos</TabsTrigger>
+            <TabsTrigger value="eficiencia">Eficiência Operacional</TabsTrigger>
+            <TabsTrigger value="risco">Indicadores de Risco de Sucessão</TabsTrigger>
+            <TabsTrigger value="detalhes">Análise Detalhada</TabsTrigger>
           </TabsList>
 
-          {/* ---------- Transição ---------- */}
-          <TabsContent value="transicao" className="space-y-4">
+          {/* ---------- ESTABILIDADE ESTRUTURAL ---------- */}
+          <TabsContent value="estabilidade" className="space-y-4">
+            {/* #1 Balanço Patrimonial */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2"><Scale className="h-4 w-4" /> Balanço Patrimonial de Pessoal</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Composição analítica de entradas e saídas do quadro funcional no período.</p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <BalancoColuna titulo="ENTRADAS" total={balanco.totalE} linhas={balanco.entradas} tom="emerald" />
+                  <BalancoColuna titulo="SAÍDAS" total={balanco.totalS} linhas={balanco.saidas} tom="rose" />
+                </div>
+                <div className="mt-4 pt-4 border-t text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Variação Líquida do Quadro</p>
+                  <p className={`text-3xl font-bold ${kpis.saldo >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    {kpis.saldo >= 0 ? "+" : ""}{kpis.saldo.toLocaleString("pt-BR")}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* #12 Série histórica */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Série Histórica de Movimentações</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Admissões, desligamentos e saldo mensal — para identificação de padrões sazonais.</p>
+              </CardHeader>
+              <CardContent className="h-80">
+                {timeline.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Sem dados no período.</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={timeline}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="mes" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <RTooltip />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Line type="monotone" dataKey="admissoes" name="Admissões" stroke="hsl(142 71% 45%)" strokeWidth={2} />
+                      <Line type="monotone" dataKey="desligamentos" name="Desligamentos" stroke="hsl(0 84% 60%)" strokeWidth={2} />
+                      <Line type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(217 91% 60%)" strokeWidth={2} strokeDasharray="4 4" />
+                      <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* #2 Envelhecimento */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Distribuição por Tempo de Casa (Desligados)</CardTitle>
+                  <p className="text-[10px] text-muted-foreground">Proxy para envelhecimento e risco de aposentadoria — {envelhecimento.pctAposentavel.toFixed(0)}% saíram com ≥25 anos de serviço.</p>
+                </CardHeader>
+                <CardContent className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={envelhecimento.buckets}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <RTooltip />
+                      <Bar dataKey="qtd" name="Servidores" fill="hsl(280 65% 60%)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              {/* #11 Eficiência por Secretaria */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Ranking de Eficiência por Secretaria</CardTitle>
+                  <p className="text-[10px] text-muted-foreground">Score composto: retenção × vacância. Quanto maior, melhor a gestão de pessoal.</p>
+                </CardHeader>
+                <CardContent className="h-72 overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-[10px]">Secretaria</TableHead>
+                        <TableHead className="text-[10px] text-right">Admissões</TableHead>
+                        <TableHead className="text-[10px] text-right">Vacância</TableHead>
+                        <TableHead className="text-[10px] text-right">Retenção</TableHead>
+                        <TableHead className="text-[10px] text-right">Score</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {eficienciaSec.map((r) => (
+                        <TableRow key={r.secretaria}>
+                          <TableCell className="text-[11px]">{r.secretaria}</TableCell>
+                          <TableCell className="text-[11px] text-right">{r.admissoes}</TableCell>
+                          <TableCell className={`text-[11px] text-right ${r.vacancia > 90 ? "text-rose-600" : r.vacancia > 60 ? "text-amber-600" : "text-emerald-600"}`}>{r.vacancia}d</TableCell>
+                          <TableCell className="text-[11px] text-right">{r.retencao}%</TableCell>
+                          <TableCell className={`text-[11px] text-right font-semibold ${r.score >= 70 ? "text-emerald-600" : r.score >= 50 ? "text-amber-600" : "text-rose-600"}`}>{r.score}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* ---------- DIAGNÓSTICO DE ATRITO ---------- */}
+          <TabsContent value="atrito" className="space-y-4">
+            <AlertCardFormal
+              titulo="DESLIGAMENTO PRECOCE DE NOVOS EFETIVOS"
+              valor={precoceAnalitico.total}
+              descricao="Servidores efetivos que solicitaram exoneração dentro do período inicial de estágio probatório (3 anos, CF/88 art. 41)."
+            />
+
+            {/* #4 Painel analítico desligamento precoce */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-xs">Por Secretaria de Lotação</CardTitle></CardHeader>
+                <CardContent className="h-64">
+                  {precoceAnalitico.porSec.length === 0 ? <Empty /> : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={precoceAnalitico.porSec} layout="vertical" margin={{ left: 100 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis type="number" tick={{ fontSize: 10 }} />
+                        <YAxis type="category" dataKey="nome" width={100} tick={{ fontSize: 10 }} />
+                        <RTooltip />
+                        <Bar dataKey="qtd" fill="hsl(0 84% 60%)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-xs">Por Tempo Decorrido até Exoneração</CardTitle></CardHeader>
+                <CardContent className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={precoceAnalitico.porFaixa}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="nome" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <RTooltip />
+                      <Bar dataKey="qtd" fill="hsl(38 92% 50%)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* #5 Curva de sobrevivência */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Curva de Retenção — Servidores Efetivos Recém-Empossados</CardTitle>
+                <p className="text-[10px] text-muted-foreground">
+                  Coorte de {sobrevivencia.total} servidores. {sobrevivencia.criticoMes ? `Ponto crítico identificado no mês ${sobrevivencia.criticoMes} — recomenda-se reforço do programa de acolhimento institucional anterior a esse marco.` : "Sem ponto crítico evidente."}
+                </p>
+              </CardHeader>
+              <CardContent className="h-80">
+                {sobrevivencia.pontos.length === 0 ? <Empty /> : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={sobrevivencia.pontos}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="mes" tick={{ fontSize: 10 }} label={{ value: "Meses após posse", position: "insideBottom", offset: -5, fontSize: 10 }} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} unit="%" />
+                      <RTooltip formatter={(v: number) => `${v}%`} />
+                      <Area type="monotone" dataKey="pct" name="Retenção" stroke="hsl(142 71% 45%)" fill="hsl(142 71% 45% / 0.2)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* #6 Acolhimento composto */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Índice de Acolhimento Institucional</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Pontuação composta {acolhimento.score}/100 (meta: 80) — agrega retenção, lotação efetiva e taxa de integração.</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Componente nome="Retenção no 1º ano" valor={acolhimento.retencao12} meta={75} />
+                <Componente nome="Taxa de lotação definitiva" valor={acolhimento.taxaLotacao} meta={90} />
+                <Componente nome="Servidores integrados no período" valor={acolhimento.integrados} meta={null} formato="num" />
+                <div className="pt-2 border-t flex justify-between text-xs">
+                  <span className="text-muted-foreground">Custo estimado de integração</span>
+                  <span className="font-mono">R$ {acolhimento.custo.toLocaleString("pt-BR")}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ---------- MAPEAMENTO DE TALENTOS ---------- */}
+          <TabsContent value="talentos" className="space-y-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Mobilidade Interna e Trajetórias de Encarreiramento</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Taxa de aproveitamento interno: {mobilidade.taxa}% (meta institucional: 20%).</p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {mobilidade.trajetorias.length === 0 ? <Empty /> : mobilidade.trajetorias.map((t) => (
+                    <div key={`${t.de}-${t.para}`} className="flex items-center justify-between gap-2 p-3 rounded-md border bg-muted/30">
+                      <Badge variant="outline" className="text-[10px]">{t.de}</Badge>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                      <Badge className="text-[10px]">{t.para}</Badge>
+                      <span className="ml-auto text-sm font-bold">{t.qtd}</span>
+                      <span className="text-[10px] text-muted-foreground">casos</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Matriz de Retenção de Capital Intelectual</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Cargos plotados por criticidade (volume movimentado) × taxa de retenção. Quadrante inferior-direito = alto risco.</p>
+              </CardHeader>
+              <CardContent className="h-96">
+                {matrizRetencao.length === 0 ? <Empty /> : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart margin={{ top: 20, right: 20, bottom: 30, left: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" dataKey="criticidade" name="Criticidade" tick={{ fontSize: 10 }}
+                        label={{ value: "Criticidade (volume) →", position: "insideBottom", offset: -10, fontSize: 10 }} />
+                      <YAxis type="number" dataKey="retencao" name="Retenção" unit="%" tick={{ fontSize: 10 }} domain={[0, 100]}
+                        label={{ value: "↑ Retenção", angle: -90, position: "insideLeft", fontSize: 10 }} />
+                      <ZAxis range={[60, 60]} />
+                      <ReferenceLine x={Math.max(...matrizRetencao.map((r) => r.criticidade)) / 2} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                      <ReferenceLine y={70} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                      <RTooltip cursor={{ strokeDasharray: "3 3" }}
+                        content={({ payload }: any) => {
+                          if (!payload?.[0]) return null;
+                          const d = payload[0].payload;
+                          return (
+                            <div className="bg-background border rounded p-2 text-xs">
+                              <p className="font-semibold">{d.cargo}</p>
+                              <p>Admissões: {d.admitidos} · Desligamentos: {d.exonerados}</p>
+                              <p>Retenção: {d.retencao}%</p>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Scatter data={matrizRetencao} fill="hsl(217 91% 60%)" />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-amber-600" /> Índice de Perda de Capital Intelectual</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Saídas de servidores com ≥10 anos de serviço — patrimônio de conhecimento institucional perdido.</p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                  <Stat label="Servidores veteranos desligados" value={perdaCapital.total.toLocaleString("pt-BR")} />
+                  <Stat label="Anos acumulados de experiência" value={`${perdaCapital.anosTotal.toLocaleString("pt-BR")} anos`} />
+                  <Stat label="Custo estimado de reposição" value={`R$ ${perdaCapital.custo.toLocaleString("pt-BR")}`} />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Distribuição por motivo</p>
+                  {perdaCapital.porMotivo.map((m) => {
+                    const pct = perdaCapital.total > 0 ? (m.qtd / perdaCapital.total) * 100 : 0;
+                    return (
+                      <div key={m.nome} className="space-y-1">
+                        <div className="flex justify-between text-[11px]">
+                          <span>{m.nome}</span>
+                          <span className="text-muted-foreground">{m.qtd} ({pct.toFixed(0)}%)</span>
+                        </div>
+                        <Progress value={pct} className="h-1.5" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ---------- EFICIÊNCIA OPERACIONAL ---------- */}
+          <TabsContent value="eficiencia" className="space-y-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Funil de Processamento de Admissões</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Estágios mensuráveis do processamento — etapas com maior queda indicam gargalos burocráticos.</p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {funil.map((f, i) => {
+                  const max = funil[0]?.qtd || 1;
+                  const pct = (f.qtd / max) * 100;
+                  const conversao = i > 0 && funil[i - 1].qtd > 0 ? Math.round((f.qtd / funil[i - 1].qtd) * 100) : 100;
+                  return (
+                    <div key={f.etapa} className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="font-medium">{f.etapa}</span>
+                        <span className="text-muted-foreground">{f.qtd.toLocaleString("pt-BR")} {i > 0 && <span className="ml-2 text-[10px]">({conversao}% do anterior)</span>}</span>
+                      </div>
+                      <div className="h-6 rounded bg-muted overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-sky-500 to-sky-400" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            {/* #3 Continuidade do serviço */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Índice de Continuidade do Serviço Público</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Tempo médio de vacância por secretaria — quanto maior, maior o impacto no atendimento ao cidadão. Meta institucional: &lt; 60 dias.</p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {continuidadeServico.length === 0 ? <Empty /> : continuidadeServico.map((c) => {
+                  const cor = c.vacancia > 90 ? "bg-rose-500" : c.vacancia > 60 ? "bg-amber-500" : "bg-emerald-500";
+                  return (
+                    <div key={c.secretaria} className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span>{c.secretaria}</span>
+                        <span className={`font-mono ${c.vacancia > 90 ? "text-rose-600" : c.vacancia > 60 ? "text-amber-600" : "text-emerald-600"}`}>{c.vacancia} dias</span>
+                      </div>
+                      <div className="h-2 rounded bg-muted overflow-hidden">
+                        <div className={`h-full ${cor}`} style={{ width: `${Math.min(100, (c.vacancia / 200) * 100)}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="pt-2 border-t text-[11px] text-muted-foreground">
+                  ⚠ {filtered.filter((a) => (a.vacanciaDias ?? 0) > 90).length} vagas com vacância superior a 90 dias.
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sankey original mantido como visualização sistêmica */}
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Fluxo Sistêmico: Forma de Ingresso → Destino</CardTitle></CardHeader>
+              <CardContent className="h-[420px]">
+                {sankeyData.links.length === 0 ? <Empty /> : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <Sankey data={sankeyData} nodePadding={20} margin={{ left: 10, right: 100, top: 10, bottom: 10 }}
+                      link={{ stroke: "hsl(217 91% 60% / 0.35)" }} node={<SankeyNode />}>
+                      <RTooltip />
+                    </Sankey>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ---------- RISCO DE SUCESSÃO ---------- */}
+          <TabsContent value="risco" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <AlertCard title="🚨 Desligamento Precoce" value={alerts.morteInfantil.length} description="Servidores efetivos exonerados no estágio probatório." />
+              <AlertCard title="🔄 Reingresso de Servidores" value={alerts.bumerangue.length} description="Reintegração, recondução ou novo ingresso após desligamento prévio." />
+              <AlertCard title="⏳ Vacâncias > 90 dias" value={filtered.filter((a) => (a.vacanciaDias ?? 0) > 90).length} description="Possível déficit de atendimento ao cidadão." />
+            </div>
+
+            {/* #13 Reingresso analítico */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Reingresso de Servidores ao Quadro Funcional</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Total: {reingresso.total} reingressos · Tempo médio entre desligamento e reingresso: {reingresso.tempoMedio} meses.</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Classificação por modalidade</p>
+                  {reingresso.porModalidade.map((m) => {
+                    const pct = reingresso.total > 0 ? (m.qtd / reingresso.total) * 100 : 0;
+                    return (
+                      <div key={m.nome} className="space-y-1 mb-2">
+                        <div className="flex justify-between text-[11px]">
+                          <span>{m.nome}</span>
+                          <span className="text-muted-foreground">{m.qtd} ({pct.toFixed(0)}%)</span>
+                        </div>
+                        <Progress value={pct} className="h-1.5" />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="pt-2 border-t text-[11px] text-muted-foreground space-y-1">
+                  <p>🟢 <b>Positivo:</b> reingressos por novo concurso demonstram atratividade institucional.</p>
+                  <p>🟡 <b>Neutro:</b> reintegração / recondução por obrigação legal.</p>
+                  <p>🔴 <b>Investigar:</b> padrão recorrente de saída/retorno pode indicar uso estratégico do vínculo.</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* #14 Painel de risco de sucessão */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Painel de Risco de Sucessão — Cargos Críticos</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Índice de cobertura sucessória: {riscoSucessao.coberturaPct}% (meta: 90%) · {riscoSucessao.cobertos} cargos com sucessor pronto · {riscoSucessao.emPreparacao} em preparação · {riscoSucessao.semSucessor.length} sem sucessor.</p>
+              </CardHeader>
+              <CardContent>
+                {riscoSucessao.semSucessor.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">✓ Nenhum cargo identificado sem sucessor para os filtros atuais.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-[10px]">Cargo / Função</TableHead>
+                        <TableHead className="text-[10px] text-right">Desligamentos</TableHead>
+                        <TableHead className="text-[10px] text-right">Admissões</TableHead>
+                        <TableHead className="text-[10px] text-right">Déficit</TableHead>
+                        <TableHead className="text-[10px] text-right">Veteranos saídos</TableHead>
+                        <TableHead className="text-[10px]">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {riscoSucessao.semSucessor.map((r) => (
+                        <TableRow key={r.cargo}>
+                          <TableCell className="text-[11px] font-medium">{r.cargo}</TableCell>
+                          <TableCell className="text-[11px] text-right">{r.saidas}</TableCell>
+                          <TableCell className="text-[11px] text-right">{r.entradas}</TableCell>
+                          <TableCell className="text-[11px] text-right text-rose-600 font-semibold">−{r.deficit}</TableCell>
+                          <TableCell className="text-[11px] text-right">{r.veteranos}</TableCell>
+                          <TableCell><Badge variant="destructive" className="text-[10px]">Sem sucessor</Badge></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ---------- DIAGNÓSTICO ANTIGO (Transição) ---------- */}
+          <TabsContent value="atrito-old" className="hidden">
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">Fluxo Origem → Destino</CardTitle></CardHeader>
               <CardContent className="h-[420px]">
@@ -802,13 +1238,10 @@ function AdmissaoPage() {
             </Card>
           </TabsContent>
 
-          {/* ---------- Secretaria ---------- */}
-          <TabsContent value="secretaria" className="space-y-4">
+          {/* ---------- ANÁLISE DETALHADA (Camada 3) ---------- */}
+          <TabsContent value="detalhes" className="space-y-4">
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Admitidos vs Exonerados por Secretaria</CardTitle>
-                <p className="text-[10px] text-muted-foreground">Clique em uma barra para listar os servidores correspondentes.</p>
-              </CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Distribuição por Secretaria e Cargo</CardTitle></CardHeader>
               <CardContent className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={secComp} layout="vertical" margin={{ left: 100 }}>
@@ -817,134 +1250,43 @@ function AdmissaoPage() {
                     <YAxis type="category" dataKey="secretaria" tick={{ fontSize: 11 }} width={100} />
                     <RTooltip />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar
-                      dataKey="admitidos"
-                      fill="hsl(142 71% 45%)"
-                      name="Admitidos"
-                      cursor="pointer"
-                      onClick={(d: any) => {
-                        const sec = d?.secretaria as string | undefined;
-                        if (!sec) return;
-                        setDrillAdm({
-                          title: `Admitidos — Secretaria: ${sec}`,
-                          rows: filtered.filter((a) => (a.secretaria || "—") === sec),
-                        });
-                      }}
-                    />
-                    <Bar
-                      dataKey="exonerados"
-                      fill="hsl(0 84% 60%)"
-                      name="Exonerados"
-                      cursor="pointer"
-                      onClick={(d: any) => {
-                        const sec = d?.secretaria as string | undefined;
-                        if (!sec) return;
-                        const minDate = filtered.reduce(
-                          (m, a) =>
-                            a.data_efetiva && (!m || a.data_efetiva < m) ? a.data_efetiva : m,
-                          "" as string,
-                        );
-                        const rows = rescisoes.filter(
-                          (r) =>
-                            (r.secretaria_nome || "—") === sec &&
-                            (!minDate || r.data_rescisao >= minDate),
-                        );
-                        setDrillExo({
-                          title: `Exonerados — Secretaria: ${sec}`,
-                          rows,
-                        });
-                      }}
-                    />
+                    <Bar dataKey="admitidos" fill="hsl(142 71% 45%)" name="Admitidos" cursor="pointer"
+                      onClick={(d: any) => { const sec = d?.secretaria; if (sec) setDrillAdm({ title: `Admitidos — ${sec}`, rows: filtered.filter((a) => (a.secretaria || "—") === sec) }); }} />
+                    <Bar dataKey="exonerados" fill="hsl(0 84% 60%)" name="Desligados" cursor="pointer"
+                      onClick={(d: any) => { const sec = d?.secretaria; if (sec) setDrillExo({ title: `Desligados — ${sec}`, rows: rescPeriodo.filter((r) => (r.secretaria_nome || "—") === sec) }); }} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Top Cargos por Turnover (Admissões + Exonerações)</CardTitle>
-                <p className="text-[10px] text-muted-foreground">Clique em uma barra para listar os servidores.</p>
-              </CardHeader>
-              <CardContent className="h-96">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={cargoRot} layout="vertical" margin={{ left: 160 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" tick={{ fontSize: 10 }} />
-                    <YAxis type="category" dataKey="cargo" tick={{ fontSize: 10 }} width={160} />
-                    <RTooltip />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar
-                      dataKey="admitidos"
-                      stackId="a"
-                      fill="hsl(142 71% 45%)"
-                      name="Admitidos"
-                      cursor="pointer"
-                      onClick={(d: any) => {
-                        const cg = (d?.cargo || "").trim();
-                        if (!cg) return;
-                        setDrillAdm({
-                          title: `Admitidos — Cargo: ${cg}`,
-                          rows: filtered.filter((a) => (a.cargo || "—").trim() === cg),
-                        });
-                      }}
-                    />
-                    <Bar
-                      dataKey="exonerados"
-                      stackId="a"
-                      fill="hsl(0 84% 60%)"
-                      name="Exonerados"
-                      cursor="pointer"
-                      onClick={(d: any) => {
-                        const cg = (d?.cargo || "").trim();
-                        if (!cg) return;
-                        const minDate = filtered.reduce(
-                          (m, a) =>
-                            a.data_efetiva && (!m || a.data_efetiva < m) ? a.data_efetiva : m,
-                          "" as string,
-                        );
-                        const rows = rescisoes.filter(
-                          (r) =>
-                            (r.cargo_nome || "—").trim() === cg &&
-                            (!minDate || r.data_rescisao >= minDate),
-                        );
-                        setDrillExo({
-                          title: `Exonerados — Cargo: ${cg}`,
-                          rows,
-                        });
-                      }}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ---------- Alertas ---------- */}
-          <TabsContent value="alertas" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <AlertCard title="🚨 Morte Infantil" value={alerts.morteInfantil.length} description="Novos efetivos que já pediram exoneração" />
-              <AlertCard title="🔄 Servidores Bumerangue" value={alerts.bumerangue.length} description="Saíram e voltaram (mesmo prontuário ou nome)" />
-              <AlertCard title="⏳ Vacâncias > 90 dias" value={filtered.filter((a) => (a.vacanciaDias ?? 0) > 90).length} description="Tempo entre saída e substituto" />
-            </div>
 
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Morte Infantil — Novos Efetivos que já saíram</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Desligamento Precoce — Servidores Efetivos Exonerados no Período Inicial</CardTitle></CardHeader>
               <CardContent>
                 <ServidoresTable rows={alerts.morteInfantil} onRowClick={setOpenJornada} showRescisao />
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Servidores Bumerangue (Porta Giratória)</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Reingresso de Servidores — Análise de Retorno ao Quadro Funcional</CardTitle></CardHeader>
               <CardContent>
-                <ServidoresTable rows={alerts.bumerangue} onRowClick={setOpenJornada} showRescisao />
+                <ServidoresTable rows={alerts.bumerangue} onRowClick={setOpenJornada} showRescisao reingresso />
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* ---------- Detalhes ---------- */}
-          <TabsContent value="detalhes">
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Lista Completa ({filtered.length})</CardTitle></CardHeader>
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm">Alterações de Função ({alteracoes.length})</CardTitle>
+                <Button size="sm" variant="ghost" onClick={() => exportCsv(alteracoes, "alteracoes_funcao.csv")}>
+                  <FileText className="h-3 w-3" /> Gerar Memo (CSV)
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <ServidoresTable rows={alteracoes} onRowClick={setOpenJornada} compact />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Lista Completa de Movimentações ({filtered.length})</CardTitle></CardHeader>
               <CardContent>
                 <ServidoresTable rows={filtered} onRowClick={setOpenJornada} />
               </CardContent>
