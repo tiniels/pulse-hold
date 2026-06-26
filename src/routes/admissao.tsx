@@ -1095,13 +1095,18 @@ function AdmissaoPage() {
                   {reingresso.porModalidade.map((m) => {
                     const pct = reingresso.total > 0 ? (m.qtd / reingresso.total) * 100 : 0;
                     return (
-                      <div key={m.nome} className="space-y-1 mb-2">
+                      <button
+                        type="button"
+                        key={m.nome}
+                        onClick={() => setDrillAdm({ title: `Reingresso — ${m.nome}`, rows: m.rows })}
+                        className="w-full text-left space-y-1 mb-2 hover:bg-accent/40 rounded p-1 cursor-pointer transition"
+                      >
                         <div className="flex justify-between text-[11px]">
                           <span>{m.nome}</span>
                           <span className="text-muted-foreground">{m.qtd} ({pct.toFixed(0)}%)</span>
                         </div>
                         <Progress value={pct} className="h-1.5" />
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
