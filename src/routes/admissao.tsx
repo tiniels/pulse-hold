@@ -1303,12 +1303,10 @@ function AdmissaoPage() {
           onRowClick={(r) => setOpenJornada(r)}
           columns={[
             { key: "prontuario", label: "Prontuário", value: (r) => r.prontuario ?? "" },
-            { key: "nome", label: "Nome", value: (r) => r.nome },
-            { key: "cargo", label: "Cargo", value: (r) => r.cargo ?? "" },
-            { key: "secretaria", label: "Secretaria", value: (r) => r.secretaria ?? "" },
-            { key: "vinculo_categoria", label: "Vínculo", value: (r) => r.vinculo_categoria },
-            { key: "origemTipo", label: "Origem", value: (r) => r.origemTipo },
-            { key: "data_efetiva", label: "Data Admissão", value: (r) => r.data_efetiva ?? "" },
+            { key: "nome", label: "Nome do Servidor", value: (r) => r.nome },
+            { key: "cargo", label: "Cargo / Função", value: (r) => r.cargo ?? "" },
+            { key: "secretaria", label: "Secretaria de Lotação", value: (r) => r.secretaria ?? "" },
+            { key: "vinculo_categoria", label: "Natureza do Vínculo Atual", value: (r) => r.vinculo_categoria },
           ]}
         />
       )}
@@ -1321,13 +1319,11 @@ function AdmissaoPage() {
           rows={drillExo.rows}
           csvName={drillExo.title}
           columns={[
-            { key: "matricula", label: "Matrícula", value: (r) => r.matricula ?? "" },
-            { key: "nome", label: "Nome", value: (r) => r.nome },
-            { key: "cargo_nome", label: "Cargo", value: (r) => r.cargo_nome },
-            { key: "secretaria_nome", label: "Secretaria", value: (r) => r.secretaria_nome },
-            { key: "vinculo_categoria", label: "Vínculo", value: (r) => r.vinculo_categoria },
-            { key: "motivo_categoria", label: "Motivo", value: (r) => (r as any).motivo_categoria ?? "" },
-            { key: "data_rescisao", label: "Data Rescisão", value: (r) => r.data_rescisao },
+            { key: "matricula", label: "Prontuário", value: (r) => r.matricula ?? "" },
+            { key: "nome", label: "Nome do Servidor", value: (r) => r.nome },
+            { key: "cargo_nome", label: "Cargo / Função", value: (r) => r.cargo_nome },
+            { key: "secretaria_nome", label: "Secretaria de Lotação", value: (r) => r.secretaria_nome },
+            { key: "vinculo_categoria", label: "Natureza do Vínculo Atual", value: (r) => r.vinculo_categoria },
           ]}
         />
       )}
