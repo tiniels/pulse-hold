@@ -375,14 +375,15 @@ function AdmissaoPage() {
 
   // #3 Continuidade do Serviço Público — vacância por secretaria
   const continuidadeServico = useMemo(() => {
-    const m = new Map<string, { secretaria: string; soma: number; n: number; vacancia: number }>();
+    const m = new Map<string, { secretaria: string; soma: number; n: number; vacancia: number; rows: Enriched[] }>();
     for (const a of filtered) {
       if (typeof a.vacanciaDias !== "number") continue;
       const s = a.secretaria || "—";
-      if (!m.has(s)) m.set(s, { secretaria: s, soma: 0, n: 0, vacancia: 0 });
+      if (!m.has(s)) m.set(s, { secretaria: s, soma: 0, n: 0, vacancia: 0, rows: [] });
       const row = m.get(s)!;
       row.soma += a.vacanciaDias;
       row.n += 1;
+      row.rows.push(a);
     }
     const list = Array.from(m.values()).map((r) => ({ ...r, vacancia: Math.round(r.soma / r.n) }));
     return list.sort((a, b) => b.vacancia - a.vacancia).slice(0, 10);
@@ -520,16 +521,16 @@ function AdmissaoPage() {
   const perdaCapital = useMemo(() => {
     const veteranos = rescPeriodo.filter((r) => (r.dias_permanencia ?? 0) >= 3650);
     const anosTotal = veteranos.reduce((s, r) => s + Math.floor((r.dias_permanencia ?? 0) / 365), 0);
-    const porMotivo = new Map<string, number>();
+    const porMotivo = new Map<string, Rescisao[]>();
     for (const r of veteranos) {
       const k = r.motivo_categoria || "Outros";
-      porMotivo.set(k, (porMotivo.get(k) ?? 0) + 1);
+      const arr = porMotivo.get(k) ?? []; arr.push(r); porMotivo.set(k, arr);
     }
     return {
       total: veteranos.length,
       anosTotal,
       custo: anosTotal * 7000, // estimativa simples por ano de conhecimento
-      porMotivo: Array.from(porMotivo, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
+      porMotivo: Array.from(porMotivo, ([nome, arr]) => ({ nome, qtd: arr.length, rows: arr })).sort((a, b) => b.qtd - a.qtd),
       veteranos,
     };
   }, [rescPeriodo]);
