@@ -9,7 +9,7 @@ import { ArrowUpDown, Download, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Aggregated } from "@/lib/rescisao-aggregate";
 
-type SortKey = "nome" | "cargo_nome" | "secretaria_nome" | "data_admissao" | "data_rescisao" | "motivo_categoria";
+type SortKey = "matricula" | "nome" | "cargo_nome" | "secretaria_nome" | "vinculo_categoria";
 
 function fmt(iso?: string | null) {
   if (!iso) return "—";
@@ -18,16 +18,13 @@ function fmt(iso?: string | null) {
 }
 
 function toCSV(rows: Aggregated[]): string {
-  const headers = ["Nome", "Matrícula", "Cargo", "Secretaria", "Vínculo", "Admissão", "Rescisão", "Motivo", "Dias de Casa", "Evoluções", "Última Evolução"];
+  const headers = ["Prontuário", "Nome do Servidor", "Cargo / Função", "Secretaria de Lotação", "Natureza do Vínculo Atual"];
   const esc = (v: unknown) => {
     const s = v === null || v === undefined ? "" : String(v);
     return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const body = rows.map((r) => [
-    r.nome, r.matricula ?? "", r.cargo_nome, r.secretaria_nome,
-    r.vinculo_categoria, fmt(r.data_admissao), fmt(r.data_rescisao),
-    r.motivo_categoria, r.diasTotaisCasa ?? "", r.numEvolucoes,
-    fmt(r.ultimaEvolucaoData),
+    r.matricula ?? "", r.nome, r.cargo_nome, r.secretaria_nome, r.vinculo_categoria,
   ].map(esc).join(";"));
   return [headers.join(";"), ...body].join("\n");
 }
@@ -44,8 +41,8 @@ export function ServidoresListDialog({
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
-  const [sortKey, setSortKey] = useState<SortKey>("data_rescisao");
-  const [sortAsc, setSortAsc] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("nome");
+  const [sortAsc, setSortAsc] = useState(true);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
@@ -124,12 +121,11 @@ export function ServidoresListDialog({
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead><SortBtn label="Nome" k="nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
-                <TableHead><SortBtn label="Cargo" k="cargo_nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
-                <TableHead><SortBtn label="Secretaria" k="secretaria_nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
-                <TableHead><SortBtn label="Admissão" k="data_admissao" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
-                <TableHead><SortBtn label="Rescisão" k="data_rescisao" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
-                <TableHead><SortBtn label="Motivo" k="motivo_categoria" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
+                <TableHead><SortBtn label="Prontuário" k="matricula" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
+                <TableHead><SortBtn label="Nome do Servidor" k="nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
+                <TableHead><SortBtn label="Cargo / Função" k="cargo_nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
+                <TableHead><SortBtn label="Secretaria de Lotação" k="secretaria_nome" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
+                <TableHead><SortBtn label="Natureza do Vínculo Atual" k="vinculo_categoria" cur={sortKey} asc={sortAsc} on={toggleSort} /></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -139,16 +135,15 @@ export function ServidoresListDialog({
                   className={onRowClick ? "cursor-pointer hover:bg-accent/50" : ""}
                   onClick={() => onRowClick?.(r)}
                 >
+                  <TableCell className="text-xs whitespace-nowrap font-mono">{r.matricula ?? "—"}</TableCell>
                   <TableCell className="text-xs font-medium max-w-[240px] truncate">{r.nome}</TableCell>
                   <TableCell className="text-xs max-w-[200px] truncate">{r.cargo_nome}</TableCell>
                   <TableCell className="text-xs max-w-[180px] truncate">{r.secretaria_nome}</TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">{fmt(r.data_admissao)}</TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">{fmt(r.data_rescisao)}</TableCell>
-                  <TableCell className="text-xs"><Badge variant="outline">{r.motivo_categoria}</Badge></TableCell>
+                  <TableCell className="text-xs"><Badge variant="outline">{r.vinculo_categoria}</Badge></TableCell>
                 </TableRow>
               ))}
               {pageRows.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhum servidor</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">Nenhum servidor</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

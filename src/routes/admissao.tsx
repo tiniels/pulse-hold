@@ -358,14 +358,14 @@ function AdmissaoPage() {
   const envelhecimento = useMemo(() => {
     // Buckets de tempo de casa das saídas (proxy para % próximo da aposentadoria)
     const buckets = [
-      { label: "< 5 anos", min: 0, max: 1825, qtd: 0 },
-      { label: "5–15 anos", min: 1825, max: 5475, qtd: 0 },
-      { label: "15–25 anos", min: 5475, max: 9125, qtd: 0 },
-      { label: "≥ 25 anos (apto)", min: 9125, max: Infinity, qtd: 0 },
+      { label: "< 5 anos", min: 0, max: 1825, qtd: 0, rows: [] as Rescisao[] },
+      { label: "5–15 anos", min: 1825, max: 5475, qtd: 0, rows: [] as Rescisao[] },
+      { label: "15–25 anos", min: 5475, max: 9125, qtd: 0, rows: [] as Rescisao[] },
+      { label: "≥ 25 anos (apto)", min: 9125, max: Infinity, qtd: 0, rows: [] as Rescisao[] },
     ];
     for (const r of rescPeriodo) {
       const d = r.dias_permanencia ?? 0;
-      for (const b of buckets) if (d >= b.min && d < b.max) { b.qtd += 1; break; }
+      for (const b of buckets) if (d >= b.min && d < b.max) { b.qtd += 1; b.rows.push(r); break; }
     }
     const total = buckets.reduce((s, b) => s + b.qtd, 0);
     const aposentaveis = buckets[3].qtd;
@@ -375,14 +375,15 @@ function AdmissaoPage() {
 
   // #3 Continuidade do Serviço Público — vacância por secretaria
   const continuidadeServico = useMemo(() => {
-    const m = new Map<string, { secretaria: string; soma: number; n: number; vacancia: number }>();
+    const m = new Map<string, { secretaria: string; soma: number; n: number; vacancia: number; rows: Enriched[] }>();
     for (const a of filtered) {
       if (typeof a.vacanciaDias !== "number") continue;
       const s = a.secretaria || "—";
-      if (!m.has(s)) m.set(s, { secretaria: s, soma: 0, n: 0, vacancia: 0 });
+      if (!m.has(s)) m.set(s, { secretaria: s, soma: 0, n: 0, vacancia: 0, rows: [] });
       const row = m.get(s)!;
       row.soma += a.vacanciaDias;
       row.n += 1;
+      row.rows.push(a);
     }
     const list = Array.from(m.values()).map((r) => ({ ...r, vacancia: Math.round(r.soma / r.n) }));
     return list.sort((a, b) => b.vacancia - a.vacancia).slice(0, 10);
@@ -391,26 +392,24 @@ function AdmissaoPage() {
   // #4 Desligamento Precoce — analítico
   const precoceAnalitico = useMemo(() => {
     const rows = alerts.morteInfantil;
-    const porSec = new Map<string, number>();
-    const porFaixa = { "0–6 meses": 0, "6–12 meses": 0, "12–24 meses": 0, "24–36 meses": 0 };
+    const porSec = new Map<string, Enriched[]>();
+    const porFaixaRows: Record<string, Enriched[]> = { "0–6 meses": [], "6–12 meses": [], "12–24 meses": [], "24–36 meses": [] };
     const porMotivo = new Map<string, number>();
     for (const r of rows) {
       const s = r.secretaria || "—";
-      porSec.set(s, (porSec.get(s) ?? 0) + 1);
+      const arr = porSec.get(s) ?? []; arr.push(r); porSec.set(s, arr);
       const adm = r.data_efetiva ? new Date(r.data_efetiva).getTime() : 0;
       const sai = r.rescisaoPrevia?.data_rescisao ? new Date(r.rescisaoPrevia.data_rescisao).getTime() : 0;
       const dias = (sai - adm) / 86400000;
-      if (dias <= 183) porFaixa["0–6 meses"] += 1;
-      else if (dias <= 365) porFaixa["6–12 meses"] += 1;
-      else if (dias <= 730) porFaixa["12–24 meses"] += 1;
-      else porFaixa["24–36 meses"] += 1;
+      const k = dias <= 183 ? "0–6 meses" : dias <= 365 ? "6–12 meses" : dias <= 730 ? "12–24 meses" : "24–36 meses";
+      porFaixaRows[k].push(r);
       const mot = r.rescisaoPrevia?.motivo_categoria || "Não informado";
       porMotivo.set(mot, (porMotivo.get(mot) ?? 0) + 1);
     }
     return {
       total: rows.length,
-      porSec: Array.from(porSec, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd).slice(0, 6),
-      porFaixa: Object.entries(porFaixa).map(([nome, qtd]) => ({ nome, qtd })),
+      porSec: Array.from(porSec, ([nome, arr]) => ({ nome, qtd: arr.length, rows: arr })).sort((a, b) => b.qtd - a.qtd).slice(0, 6),
+      porFaixa: Object.entries(porFaixaRows).map(([nome, arr]) => ({ nome, qtd: arr.length, rows: arr })),
       porMotivo: Array.from(porMotivo, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
     };
   }, [alerts.morteInfantil]);
@@ -522,16 +521,16 @@ function AdmissaoPage() {
   const perdaCapital = useMemo(() => {
     const veteranos = rescPeriodo.filter((r) => (r.dias_permanencia ?? 0) >= 3650);
     const anosTotal = veteranos.reduce((s, r) => s + Math.floor((r.dias_permanencia ?? 0) / 365), 0);
-    const porMotivo = new Map<string, number>();
+    const porMotivo = new Map<string, Rescisao[]>();
     for (const r of veteranos) {
       const k = r.motivo_categoria || "Outros";
-      porMotivo.set(k, (porMotivo.get(k) ?? 0) + 1);
+      const arr = porMotivo.get(k) ?? []; arr.push(r); porMotivo.set(k, arr);
     }
     return {
       total: veteranos.length,
       anosTotal,
       custo: anosTotal * 7000, // estimativa simples por ano de conhecimento
-      porMotivo: Array.from(porMotivo, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
+      porMotivo: Array.from(porMotivo, ([nome, arr]) => ({ nome, qtd: arr.length, rows: arr })).sort((a, b) => b.qtd - a.qtd),
       veteranos,
     };
   }, [rescPeriodo]);
@@ -602,7 +601,7 @@ function AdmissaoPage() {
   // #13 Reingresso analítico
   const reingresso = useMemo(() => {
     const rows = alerts.bumerangue;
-    const porModalidade = new Map<string, number>();
+    const porModalidade = new Map<string, Enriched[]>();
     const tempos: number[] = [];
     for (const r of rows) {
       const k = r.origemTipo === "Ex-Efetivo" ? "Novo concurso (após efetivo)"
@@ -610,7 +609,7 @@ function AdmissaoPage() {
         : r.origemTipo === "Ex-Comissionado" ? "Recondução / pós-comissão"
         : r.origemTipo === "Ex-Contrato" ? "Aproveitamento de cadastro"
         : "Reingresso geral";
-      porModalidade.set(k, (porModalidade.get(k) ?? 0) + 1);
+      const arr = porModalidade.get(k) ?? []; arr.push(r); porModalidade.set(k, arr);
       if (r.rescisaoPrevia && r.data_efetiva) {
         const t = (new Date(r.data_efetiva).getTime() - new Date(r.rescisaoPrevia.data_rescisao).getTime()) / 86400000 / 30;
         if (t > 0) tempos.push(t);
@@ -619,7 +618,7 @@ function AdmissaoPage() {
     const tempoMedio = tempos.length ? Math.round(tempos.reduce((s, t) => s + t, 0) / tempos.length) : 0;
     return {
       total: rows.length,
-      porModalidade: Array.from(porModalidade, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
+      porModalidade: Array.from(porModalidade, ([nome, arr]) => ({ nome, qtd: arr.length, rows: arr })).sort((a, b) => b.qtd - a.qtd),
       tempoMedio,
     };
   }, [alerts.bumerangue]);
@@ -808,12 +807,16 @@ function AdmissaoPage() {
                 </CardHeader>
                 <CardContent className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={envelhecimento.buckets}>
+                    <BarChart data={envelhecimento.buckets} onClick={(s: any) => {
+                      const label = s?.activePayload?.[0]?.payload?.label;
+                      const b = envelhecimento.buckets.find((x) => x.label === label);
+                      if (b && b.rows.length) setDrillExo({ title: `Tempo de Casa — ${b.label}`, rows: b.rows });
+                    }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 10 }} />
                       <RTooltip />
-                      <Bar dataKey="qtd" name="Servidores" fill="hsl(280 65% 60%)" />
+                      <Bar dataKey="qtd" name="Servidores" fill="hsl(280 65% 60%)" cursor="pointer" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -867,12 +870,16 @@ function AdmissaoPage() {
                 <CardContent className="h-64">
                   {precoceAnalitico.porSec.length === 0 ? <Empty /> : (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={precoceAnalitico.porSec} layout="vertical" margin={{ left: 100 }}>
+                      <BarChart data={precoceAnalitico.porSec} layout="vertical" margin={{ left: 100 }} onClick={(s: any) => {
+                        const nome = s?.activePayload?.[0]?.payload?.nome;
+                        const it = precoceAnalitico.porSec.find((x) => x.nome === nome);
+                        if (it && it.rows.length) setDrillAdm({ title: `Desligamento Precoce — ${nome}`, rows: it.rows });
+                      }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis type="number" tick={{ fontSize: 10 }} />
                         <YAxis type="category" dataKey="nome" width={100} tick={{ fontSize: 10 }} />
                         <RTooltip />
-                        <Bar dataKey="qtd" fill="hsl(0 84% 60%)" />
+                        <Bar dataKey="qtd" fill="hsl(0 84% 60%)" cursor="pointer" />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -882,12 +889,16 @@ function AdmissaoPage() {
                 <CardHeader className="pb-2"><CardTitle className="text-xs">Por Tempo Decorrido até Exoneração</CardTitle></CardHeader>
                 <CardContent className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={precoceAnalitico.porFaixa}>
+                    <BarChart data={precoceAnalitico.porFaixa} onClick={(s: any) => {
+                      const nome = s?.activePayload?.[0]?.payload?.nome;
+                      const it = precoceAnalitico.porFaixa.find((x) => x.nome === nome);
+                      if (it && it.rows.length) setDrillAdm({ title: `Desligamento Precoce — ${nome}`, rows: it.rows });
+                    }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="nome" tick={{ fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 10 }} />
                       <RTooltip />
-                      <Bar dataKey="qtd" fill="hsl(38 92% 50%)" />
+                      <Bar dataKey="qtd" fill="hsl(38 92% 50%)" cursor="pointer" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -1010,13 +1021,18 @@ function AdmissaoPage() {
                   {perdaCapital.porMotivo.map((m) => {
                     const pct = perdaCapital.total > 0 ? (m.qtd / perdaCapital.total) * 100 : 0;
                     return (
-                      <div key={m.nome} className="space-y-1">
+                      <button
+                        type="button"
+                        key={m.nome}
+                        onClick={() => setDrillExo({ title: `Perda de Capital — ${m.nome}`, rows: m.rows })}
+                        className="w-full text-left space-y-1 hover:bg-accent/40 rounded p-1 cursor-pointer transition"
+                      >
                         <div className="flex justify-between text-[11px]">
                           <span>{m.nome}</span>
                           <span className="text-muted-foreground">{m.qtd} ({pct.toFixed(0)}%)</span>
                         </div>
                         <Progress value={pct} className="h-1.5" />
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -1036,7 +1052,12 @@ function AdmissaoPage() {
                 {continuidadeServico.length === 0 ? <Empty /> : continuidadeServico.map((c) => {
                   const cor = c.vacancia > 90 ? "bg-rose-500" : c.vacancia > 60 ? "bg-amber-500" : "bg-emerald-500";
                   return (
-                    <div key={c.secretaria} className="space-y-1">
+                    <button
+                      type="button"
+                      key={c.secretaria}
+                      onClick={() => setDrillAdm({ title: `Continuidade — ${c.secretaria}`, rows: c.rows })}
+                      className="w-full text-left space-y-1 hover:bg-accent/40 rounded p-1 cursor-pointer transition"
+                    >
                       <div className="flex justify-between text-[11px]">
                         <span>{c.secretaria}</span>
                         <span className={`font-mono ${c.vacancia > 90 ? "text-rose-600" : c.vacancia > 60 ? "text-amber-600" : "text-emerald-600"}`}>{c.vacancia} dias</span>
@@ -1044,7 +1065,7 @@ function AdmissaoPage() {
                       <div className="h-2 rounded bg-muted overflow-hidden">
                         <div className={`h-full ${cor}`} style={{ width: `${Math.min(100, (c.vacancia / 200) * 100)}%` }} />
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
                 <div className="pt-2 border-t text-[11px] text-muted-foreground">
@@ -1074,13 +1095,18 @@ function AdmissaoPage() {
                   {reingresso.porModalidade.map((m) => {
                     const pct = reingresso.total > 0 ? (m.qtd / reingresso.total) * 100 : 0;
                     return (
-                      <div key={m.nome} className="space-y-1 mb-2">
+                      <button
+                        type="button"
+                        key={m.nome}
+                        onClick={() => setDrillAdm({ title: `Reingresso — ${m.nome}`, rows: m.rows })}
+                        className="w-full text-left space-y-1 mb-2 hover:bg-accent/40 rounded p-1 cursor-pointer transition"
+                      >
                         <div className="flex justify-between text-[11px]">
                           <span>{m.nome}</span>
                           <span className="text-muted-foreground">{m.qtd} ({pct.toFixed(0)}%)</span>
                         </div>
                         <Progress value={pct} className="h-1.5" />
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -1277,12 +1303,10 @@ function AdmissaoPage() {
           onRowClick={(r) => setOpenJornada(r)}
           columns={[
             { key: "prontuario", label: "Prontuário", value: (r) => r.prontuario ?? "" },
-            { key: "nome", label: "Nome", value: (r) => r.nome },
-            { key: "cargo", label: "Cargo", value: (r) => r.cargo ?? "" },
-            { key: "secretaria", label: "Secretaria", value: (r) => r.secretaria ?? "" },
-            { key: "vinculo_categoria", label: "Vínculo", value: (r) => r.vinculo_categoria },
-            { key: "origemTipo", label: "Origem", value: (r) => r.origemTipo },
-            { key: "data_efetiva", label: "Data Admissão", value: (r) => r.data_efetiva ?? "" },
+            { key: "nome", label: "Nome do Servidor", value: (r) => r.nome },
+            { key: "cargo", label: "Cargo / Função", value: (r) => r.cargo ?? "" },
+            { key: "secretaria", label: "Secretaria de Lotação", value: (r) => r.secretaria ?? "" },
+            { key: "vinculo_categoria", label: "Natureza do Vínculo Atual", value: (r) => r.vinculo_categoria },
           ]}
         />
       )}
@@ -1295,13 +1319,11 @@ function AdmissaoPage() {
           rows={drillExo.rows}
           csvName={drillExo.title}
           columns={[
-            { key: "matricula", label: "Matrícula", value: (r) => r.matricula ?? "" },
-            { key: "nome", label: "Nome", value: (r) => r.nome },
-            { key: "cargo_nome", label: "Cargo", value: (r) => r.cargo_nome },
-            { key: "secretaria_nome", label: "Secretaria", value: (r) => r.secretaria_nome },
-            { key: "vinculo_categoria", label: "Vínculo", value: (r) => r.vinculo_categoria },
-            { key: "motivo_categoria", label: "Motivo", value: (r) => (r as any).motivo_categoria ?? "" },
-            { key: "data_rescisao", label: "Data Rescisão", value: (r) => r.data_rescisao },
+            { key: "matricula", label: "Prontuário", value: (r) => r.matricula ?? "" },
+            { key: "nome", label: "Nome do Servidor", value: (r) => r.nome },
+            { key: "cargo_nome", label: "Cargo / Função", value: (r) => r.cargo_nome },
+            { key: "secretaria_nome", label: "Secretaria de Lotação", value: (r) => r.secretaria_nome },
+            { key: "vinculo_categoria", label: "Natureza do Vínculo Atual", value: (r) => r.vinculo_categoria },
           ]}
         />
       )}
