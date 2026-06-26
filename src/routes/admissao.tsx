@@ -1026,31 +1026,6 @@ function AdmissaoPage() {
 
           {/* ---------- EFICIÊNCIA OPERACIONAL ---------- */}
           <TabsContent value="eficiencia" className="space-y-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Funil de Processamento de Admissões</CardTitle>
-                <p className="text-[10px] text-muted-foreground">Estágios mensuráveis do processamento — etapas com maior queda indicam gargalos burocráticos.</p>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {funil.map((f, i) => {
-                  const max = funil[0]?.qtd || 1;
-                  const pct = (f.qtd / max) * 100;
-                  const conversao = i > 0 && funil[i - 1].qtd > 0 ? Math.round((f.qtd / funil[i - 1].qtd) * 100) : 100;
-                  return (
-                    <div key={f.etapa} className="space-y-1">
-                      <div className="flex justify-between text-[11px]">
-                        <span className="font-medium">{f.etapa}</span>
-                        <span className="text-muted-foreground">{f.qtd.toLocaleString("pt-BR")} {i > 0 && <span className="ml-2 text-[10px]">({conversao}% do anterior)</span>}</span>
-                      </div>
-                      <div className="h-6 rounded bg-muted overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-sky-500 to-sky-400" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-
             {/* #3 Continuidade do serviço */}
             <Card>
               <CardHeader className="pb-2">
@@ -1075,21 +1050,6 @@ function AdmissaoPage() {
                 <div className="pt-2 border-t text-[11px] text-muted-foreground">
                   ⚠ {filtered.filter((a) => (a.vacanciaDias ?? 0) > 90).length} vagas com vacância superior a 90 dias.
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Sankey original mantido como visualização sistêmica */}
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Fluxo Sistêmico: Forma de Ingresso → Destino</CardTitle></CardHeader>
-              <CardContent className="h-[420px]">
-                {sankeyData.links.length === 0 ? <Empty /> : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <Sankey data={sankeyData} nodePadding={20} margin={{ left: 10, right: 100, top: 10, bottom: 10 }}
-                      link={{ stroke: "hsl(217 91% 60% / 0.35)" }} node={<SankeyNode />}>
-                      <RTooltip />
-                    </Sankey>
-                  </ResponsiveContainer>
-                )}
               </CardContent>
             </Card>
           </TabsContent>
