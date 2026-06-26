@@ -870,12 +870,16 @@ function AdmissaoPage() {
                 <CardContent className="h-64">
                   {precoceAnalitico.porSec.length === 0 ? <Empty /> : (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={precoceAnalitico.porSec} layout="vertical" margin={{ left: 100 }}>
+                      <BarChart data={precoceAnalitico.porSec} layout="vertical" margin={{ left: 100 }} onClick={(s: any) => {
+                        const nome = s?.activePayload?.[0]?.payload?.nome;
+                        const it = precoceAnalitico.porSec.find((x) => x.nome === nome);
+                        if (it && it.rows.length) setDrillAdm({ title: `Desligamento Precoce — ${nome}`, rows: it.rows });
+                      }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis type="number" tick={{ fontSize: 10 }} />
                         <YAxis type="category" dataKey="nome" width={100} tick={{ fontSize: 10 }} />
                         <RTooltip />
-                        <Bar dataKey="qtd" fill="hsl(0 84% 60%)" />
+                        <Bar dataKey="qtd" fill="hsl(0 84% 60%)" cursor="pointer" />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -885,12 +889,16 @@ function AdmissaoPage() {
                 <CardHeader className="pb-2"><CardTitle className="text-xs">Por Tempo Decorrido até Exoneração</CardTitle></CardHeader>
                 <CardContent className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={precoceAnalitico.porFaixa}>
+                    <BarChart data={precoceAnalitico.porFaixa} onClick={(s: any) => {
+                      const nome = s?.activePayload?.[0]?.payload?.nome;
+                      const it = precoceAnalitico.porFaixa.find((x) => x.nome === nome);
+                      if (it && it.rows.length) setDrillAdm({ title: `Desligamento Precoce — ${nome}`, rows: it.rows });
+                    }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="nome" tick={{ fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 10 }} />
                       <RTooltip />
-                      <Bar dataKey="qtd" fill="hsl(38 92% 50%)" />
+                      <Bar dataKey="qtd" fill="hsl(38 92% 50%)" cursor="pointer" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
