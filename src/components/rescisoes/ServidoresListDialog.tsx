@@ -9,7 +9,7 @@ import { ArrowUpDown, Download, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Aggregated } from "@/lib/rescisao-aggregate";
 
-type SortKey = "nome" | "cargo_nome" | "secretaria_nome" | "data_admissao" | "data_rescisao" | "motivo_categoria";
+type SortKey = "matricula" | "nome" | "cargo_nome" | "secretaria_nome" | "vinculo_categoria";
 
 function fmt(iso?: string | null) {
   if (!iso) return "—";
@@ -18,16 +18,13 @@ function fmt(iso?: string | null) {
 }
 
 function toCSV(rows: Aggregated[]): string {
-  const headers = ["Nome", "Matrícula", "Cargo", "Secretaria", "Vínculo", "Admissão", "Rescisão", "Motivo", "Dias de Casa", "Evoluções", "Última Evolução"];
+  const headers = ["Prontuário", "Nome do Servidor", "Cargo / Função", "Secretaria de Lotação", "Natureza do Vínculo Atual"];
   const esc = (v: unknown) => {
     const s = v === null || v === undefined ? "" : String(v);
     return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const body = rows.map((r) => [
-    r.nome, r.matricula ?? "", r.cargo_nome, r.secretaria_nome,
-    r.vinculo_categoria, fmt(r.data_admissao), fmt(r.data_rescisao),
-    r.motivo_categoria, r.diasTotaisCasa ?? "", r.numEvolucoes,
-    fmt(r.ultimaEvolucaoData),
+    r.matricula ?? "", r.nome, r.cargo_nome, r.secretaria_nome, r.vinculo_categoria,
   ].map(esc).join(";"));
   return [headers.join(";"), ...body].join("\n");
 }
@@ -45,7 +42,7 @@ export function ServidoresListDialog({
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [sortKey, setSortKey] = useState<SortKey>("data_rescisao");
-  const [sortAsc, setSortAsc] = useState(false);
+  const [sortAsc, setSortAsc] = useState(true);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
