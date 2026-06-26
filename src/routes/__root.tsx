@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { PeriodProvider } from "../contexts/PeriodContext";
+import { LoadingScreen } from "../components/LoadingScreen";
+import bgAsset from "../assets/cab-background.png.asset.json";
 
 function NotFoundComponent() {
   return (
@@ -96,6 +98,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "preload", as: "image", href: bgAsset.url, fetchpriority: "high" } as any,
     ],
   }),
   shellComponent: RootShell,
@@ -124,6 +127,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <PeriodProvider>
+        <LoadingScreen />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </PeriodProvider>
