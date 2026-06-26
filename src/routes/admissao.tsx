@@ -358,14 +358,14 @@ function AdmissaoPage() {
   const envelhecimento = useMemo(() => {
     // Buckets de tempo de casa das saídas (proxy para % próximo da aposentadoria)
     const buckets = [
-      { label: "< 5 anos", min: 0, max: 1825, qtd: 0 },
-      { label: "5–15 anos", min: 1825, max: 5475, qtd: 0 },
-      { label: "15–25 anos", min: 5475, max: 9125, qtd: 0 },
-      { label: "≥ 25 anos (apto)", min: 9125, max: Infinity, qtd: 0 },
+      { label: "< 5 anos", min: 0, max: 1825, qtd: 0, rows: [] as Rescisao[] },
+      { label: "5–15 anos", min: 1825, max: 5475, qtd: 0, rows: [] as Rescisao[] },
+      { label: "15–25 anos", min: 5475, max: 9125, qtd: 0, rows: [] as Rescisao[] },
+      { label: "≥ 25 anos (apto)", min: 9125, max: Infinity, qtd: 0, rows: [] as Rescisao[] },
     ];
     for (const r of rescPeriodo) {
       const d = r.dias_permanencia ?? 0;
-      for (const b of buckets) if (d >= b.min && d < b.max) { b.qtd += 1; break; }
+      for (const b of buckets) if (d >= b.min && d < b.max) { b.qtd += 1; b.rows.push(r); break; }
     }
     const total = buckets.reduce((s, b) => s + b.qtd, 0);
     const aposentaveis = buckets[3].qtd;
@@ -391,26 +391,24 @@ function AdmissaoPage() {
   // #4 Desligamento Precoce — analítico
   const precoceAnalitico = useMemo(() => {
     const rows = alerts.morteInfantil;
-    const porSec = new Map<string, number>();
-    const porFaixa = { "0–6 meses": 0, "6–12 meses": 0, "12–24 meses": 0, "24–36 meses": 0 };
+    const porSec = new Map<string, Enriched[]>();
+    const porFaixaRows: Record<string, Enriched[]> = { "0–6 meses": [], "6–12 meses": [], "12–24 meses": [], "24–36 meses": [] };
     const porMotivo = new Map<string, number>();
     for (const r of rows) {
       const s = r.secretaria || "—";
-      porSec.set(s, (porSec.get(s) ?? 0) + 1);
+      const arr = porSec.get(s) ?? []; arr.push(r); porSec.set(s, arr);
       const adm = r.data_efetiva ? new Date(r.data_efetiva).getTime() : 0;
       const sai = r.rescisaoPrevia?.data_rescisao ? new Date(r.rescisaoPrevia.data_rescisao).getTime() : 0;
       const dias = (sai - adm) / 86400000;
-      if (dias <= 183) porFaixa["0–6 meses"] += 1;
-      else if (dias <= 365) porFaixa["6–12 meses"] += 1;
-      else if (dias <= 730) porFaixa["12–24 meses"] += 1;
-      else porFaixa["24–36 meses"] += 1;
+      const k = dias <= 183 ? "0–6 meses" : dias <= 365 ? "6–12 meses" : dias <= 730 ? "12–24 meses" : "24–36 meses";
+      porFaixaRows[k].push(r);
       const mot = r.rescisaoPrevia?.motivo_categoria || "Não informado";
       porMotivo.set(mot, (porMotivo.get(mot) ?? 0) + 1);
     }
     return {
       total: rows.length,
-      porSec: Array.from(porSec, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd).slice(0, 6),
-      porFaixa: Object.entries(porFaixa).map(([nome, qtd]) => ({ nome, qtd })),
+      porSec: Array.from(porSec, ([nome, arr]) => ({ nome, qtd: arr.length, rows: arr })).sort((a, b) => b.qtd - a.qtd).slice(0, 6),
+      porFaixa: Object.entries(porFaixaRows).map(([nome, arr]) => ({ nome, qtd: arr.length, rows: arr })),
       porMotivo: Array.from(porMotivo, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
     };
   }, [alerts.morteInfantil]);
@@ -602,7 +600,7 @@ function AdmissaoPage() {
   // #13 Reingresso analítico
   const reingresso = useMemo(() => {
     const rows = alerts.bumerangue;
-    const porModalidade = new Map<string, number>();
+    const porModalidade = new Map<string, Enriched[]>();
     const tempos: number[] = [];
     for (const r of rows) {
       const k = r.origemTipo === "Ex-Efetivo" ? "Novo concurso (após efetivo)"
@@ -610,7 +608,7 @@ function AdmissaoPage() {
         : r.origemTipo === "Ex-Comissionado" ? "Recondução / pós-comissão"
         : r.origemTipo === "Ex-Contrato" ? "Aproveitamento de cadastro"
         : "Reingresso geral";
-      porModalidade.set(k, (porModalidade.get(k) ?? 0) + 1);
+      const arr = porModalidade.get(k) ?? []; arr.push(r); porModalidade.set(k, arr);
       if (r.rescisaoPrevia && r.data_efetiva) {
         const t = (new Date(r.data_efetiva).getTime() - new Date(r.rescisaoPrevia.data_rescisao).getTime()) / 86400000 / 30;
         if (t > 0) tempos.push(t);
@@ -619,7 +617,7 @@ function AdmissaoPage() {
     const tempoMedio = tempos.length ? Math.round(tempos.reduce((s, t) => s + t, 0) / tempos.length) : 0;
     return {
       total: rows.length,
-      porModalidade: Array.from(porModalidade, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
+      porModalidade: Array.from(porModalidade, ([nome, arr]) => ({ nome, qtd: arr.length, rows: arr })).sort((a, b) => b.qtd - a.qtd),
       tempoMedio,
     };
   }, [alerts.bumerangue]);
