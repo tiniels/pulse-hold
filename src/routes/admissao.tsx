@@ -319,6 +319,336 @@ function AdmissaoPage() {
 
   const alteracoes = useMemo(() => filtered.filter((a) => a.tipo_movimentacao === "Alteração de Função"), [filtered]);
 
+  // ---------------- New analytics (Reformulação) ----------------
+
+  // #1 Balanço Patrimonial — entradas por vínculo, saídas por motivo
+  const minDateFiltered = useMemo(
+    () => filtered.reduce((m, a) => (a.data_efetiva && (!m || a.data_efetiva < m) ? a.data_efetiva : m), "" as string),
+    [filtered],
+  );
+  const maxDateFiltered = useMemo(
+    () => filtered.reduce((m, a) => (a.data_efetiva && (!m || a.data_efetiva > m) ? a.data_efetiva : m), "" as string),
+    [filtered],
+  );
+  const rescPeriodo = useMemo(
+    () => rescisoes.filter((r) => r.data_rescisao && (!minDateFiltered || r.data_rescisao >= minDateFiltered) && (!maxDateFiltered || r.data_rescisao <= maxDateFiltered)),
+    [rescisoes, minDateFiltered, maxDateFiltered],
+  );
+
+  const balanco = useMemo(() => {
+    const entradas = new Map<string, number>();
+    for (const a of filtered) {
+      const k = a.vinculo_categoria || "Outros";
+      entradas.set(k, (entradas.get(k) ?? 0) + 1);
+    }
+    const saidas = new Map<string, number>();
+    for (const r of rescPeriodo) {
+      const k = r.motivo_categoria || "Outros";
+      saidas.set(k, (saidas.get(k) ?? 0) + 1);
+    }
+    return {
+      entradas: Array.from(entradas, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
+      saidas: Array.from(saidas, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
+      totalE: filtered.length,
+      totalS: rescPeriodo.length,
+    };
+  }, [filtered, rescPeriodo]);
+
+  // #2 Envelhecimento — usar dias_permanencia (tempo casa) como proxy
+  const envelhecimento = useMemo(() => {
+    // Buckets de tempo de casa das saídas (proxy para % próximo da aposentadoria)
+    const buckets = [
+      { label: "< 5 anos", min: 0, max: 1825, qtd: 0 },
+      { label: "5–15 anos", min: 1825, max: 5475, qtd: 0 },
+      { label: "15–25 anos", min: 5475, max: 9125, qtd: 0 },
+      { label: "≥ 25 anos (apto)", min: 9125, max: Infinity, qtd: 0 },
+    ];
+    for (const r of rescPeriodo) {
+      const d = r.dias_permanencia ?? 0;
+      for (const b of buckets) if (d >= b.min && d < b.max) { b.qtd += 1; break; }
+    }
+    const total = buckets.reduce((s, b) => s + b.qtd, 0);
+    const aposentaveis = buckets[3].qtd;
+    const pctAposentavel = total > 0 ? (aposentaveis / total) * 100 : 0;
+    return { buckets, total, aposentaveis, pctAposentavel };
+  }, [rescPeriodo]);
+
+  // #3 Continuidade do Serviço Público — vacância por secretaria
+  const continuidadeServico = useMemo(() => {
+    const m = new Map<string, { secretaria: string; soma: number; n: number; vacancia: number }>();
+    for (const a of filtered) {
+      if (typeof a.vacanciaDias !== "number") continue;
+      const s = a.secretaria || "—";
+      if (!m.has(s)) m.set(s, { secretaria: s, soma: 0, n: 0, vacancia: 0 });
+      const row = m.get(s)!;
+      row.soma += a.vacanciaDias;
+      row.n += 1;
+    }
+    const list = Array.from(m.values()).map((r) => ({ ...r, vacancia: Math.round(r.soma / r.n) }));
+    return list.sort((a, b) => b.vacancia - a.vacancia).slice(0, 10);
+  }, [filtered]);
+
+  // #4 Desligamento Precoce — analítico
+  const precoceAnalitico = useMemo(() => {
+    const rows = alerts.morteInfantil;
+    const porSec = new Map<string, number>();
+    const porFaixa = { "0–6 meses": 0, "6–12 meses": 0, "12–24 meses": 0, "24–36 meses": 0 };
+    const porMotivo = new Map<string, number>();
+    for (const r of rows) {
+      const s = r.secretaria || "—";
+      porSec.set(s, (porSec.get(s) ?? 0) + 1);
+      const adm = r.data_efetiva ? new Date(r.data_efetiva).getTime() : 0;
+      const sai = r.rescisaoPrevia?.data_rescisao ? new Date(r.rescisaoPrevia.data_rescisao).getTime() : 0;
+      const dias = (sai - adm) / 86400000;
+      if (dias <= 183) porFaixa["0–6 meses"] += 1;
+      else if (dias <= 365) porFaixa["6–12 meses"] += 1;
+      else if (dias <= 730) porFaixa["12–24 meses"] += 1;
+      else porFaixa["24–36 meses"] += 1;
+      const mot = r.rescisaoPrevia?.motivo_categoria || "Não informado";
+      porMotivo.set(mot, (porMotivo.get(mot) ?? 0) + 1);
+    }
+    return {
+      total: rows.length,
+      porSec: Array.from(porSec, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd).slice(0, 6),
+      porFaixa: Object.entries(porFaixa).map(([nome, qtd]) => ({ nome, qtd })),
+      porMotivo: Array.from(porMotivo, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
+    };
+  }, [alerts.morteInfantil]);
+
+  // #5 Curva de Sobrevivência — coorte de novos efetivos
+  const sobrevivencia = useMemo(() => {
+    const coorte = filtered.filter((a) => a.destinoTipo === "Novo Efetivo" && a.data_efetiva);
+    const total = coorte.length;
+    if (total === 0) return { pontos: [] as { mes: number; retidos: number; pct: number }[], total: 0, criticoMes: null as number | null };
+    const meses = [1, 3, 6, 9, 12, 18, 24, 30, 36];
+    const pontos = meses.map((mes) => {
+      let retidos = 0;
+      for (const a of coorte) {
+        const pk = normPront(a.prontuario);
+        const nk = normName(a.nome);
+        const list = [...(rescPorPront.get(pk) ?? []), ...(rescPorNome.get(nk) ?? [])];
+        const ad = new Date(a.data_efetiva!).getTime();
+        const limite = ad + mes * 30 * 86400000;
+        const saiuAntes = list.some((r) => {
+          const t = r.data_rescisao ? new Date(r.data_rescisao).getTime() : 0;
+          return t > ad && t <= limite;
+        });
+        if (!saiuAntes) retidos += 1;
+      }
+      return { mes, retidos, pct: Math.round((retidos / total) * 1000) / 10 };
+    });
+    // ponto crítico = maior queda entre consecutivos
+    let criticoMes: number | null = null;
+    let maxDrop = 0;
+    for (let i = 1; i < pontos.length; i++) {
+      const drop = pontos[i - 1].pct - pontos[i].pct;
+      if (drop > maxDrop) { maxDrop = drop; criticoMes = pontos[i].mes; }
+    }
+    return { pontos, total, criticoMes };
+  }, [filtered, rescPorPront, rescPorNome]);
+
+  // #6 Índice de Acolhimento Institucional (composto)
+  const acolhimento = useMemo(() => {
+    const retencao12 = sobrevivencia.pontos.find((p) => p.mes === 12)?.pct ?? 0;
+    const totalCom = filtered.filter((a) => a.cargo && a.secretaria).length;
+    const taxaLotacao = filtered.length > 0 ? Math.round((totalCom / filtered.length) * 100) : 0;
+    const integradosPercent = Math.min(100, filtered.length > 0 ? Math.round((filtered.length / Math.max(1, filtered.length)) * 100) : 0);
+    const score = Math.round((retencao12 + taxaLotacao + integradosPercent) / 3);
+    return {
+      score,
+      retencao12: Math.round(retencao12),
+      taxaLotacao,
+      integrados: filtered.length,
+      custo: filtered.length * 4200,
+    };
+  }, [filtered, sobrevivencia]);
+
+  // #7 Mobilidade Interna — trajetórias
+  const mobilidade = useMemo(() => {
+    const trajetorias: { de: string; para: string; qtd: number }[] = [];
+    const def = (origemTipo: Enriched["origemTipo"], destinoTipo: Enriched["destinoTipo"]) => {
+      const mapDe: Record<string, string> = {
+        "Externo": "Externo",
+        "Ex-Efetivo": "Ex-Efetivo",
+        "Ex-Estagiário": "Estagiário",
+        "Ex-Comissionado": "Comissionado",
+        "Ex-Contrato": "Temporário",
+        "Readmissão": "Readmissão",
+      };
+      return { de: mapDe[origemTipo], para: destinoTipo };
+    };
+    const counts = new Map<string, number>();
+    for (const a of filtered) {
+      if (a.origemTipo === "Externo") continue;
+      const { de, para } = def(a.origemTipo, a.destinoTipo);
+      const k = `${de}→${para}`;
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    for (const [k, qtd] of counts) {
+      const [de, para] = k.split("→");
+      trajetorias.push({ de, para, qtd });
+    }
+    trajetorias.sort((a, b) => b.qtd - a.qtd);
+    const taxa = filtered.length > 0
+      ? Math.round((filtered.filter((a) => a.origemTipo !== "Externo").length / filtered.length) * 100)
+      : 0;
+    return { trajetorias: trajetorias.slice(0, 8), taxa };
+  }, [filtered]);
+
+  // #8 Matriz de Retenção — cargo
+  const matrizRetencao = useMemo(() => {
+    type Row = { cargo: string; criticidade: number; retencao: number; admitidos: number; exonerados: number };
+    const m = new Map<string, Row>();
+    for (const a of filtered) {
+      const c = (a.cargo || "—").trim();
+      if (!m.has(c)) m.set(c, { cargo: c, criticidade: 0, retencao: 100, admitidos: 0, exonerados: 0 });
+      m.get(c)!.admitidos += 1;
+    }
+    for (const r of rescPeriodo) {
+      const c = (r.cargo_nome || "—").trim();
+      if (!m.has(c)) m.set(c, { cargo: c, criticidade: 0, retencao: 100, admitidos: 0, exonerados: 0 });
+      m.get(c)!.exonerados += 1;
+    }
+    const rows = Array.from(m.values()).map((r) => {
+      const total = r.admitidos + r.exonerados;
+      const criticidade = total; // proxy: volume movimentado
+      const retencao = total > 0 ? Math.round(((r.admitidos) / total) * 100) : 100;
+      return { ...r, criticidade, retencao };
+    });
+    return rows.filter((r) => r.criticidade >= 3);
+  }, [filtered, rescPeriodo]);
+
+  // #9 Perda de Capital Intelectual
+  const perdaCapital = useMemo(() => {
+    const veteranos = rescPeriodo.filter((r) => (r.dias_permanencia ?? 0) >= 3650);
+    const anosTotal = veteranos.reduce((s, r) => s + Math.floor((r.dias_permanencia ?? 0) / 365), 0);
+    const porMotivo = new Map<string, number>();
+    for (const r of veteranos) {
+      const k = r.motivo_categoria || "Outros";
+      porMotivo.set(k, (porMotivo.get(k) ?? 0) + 1);
+    }
+    return {
+      total: veteranos.length,
+      anosTotal,
+      custo: anosTotal * 7000, // estimativa simples por ano de conhecimento
+      porMotivo: Array.from(porMotivo, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
+      veteranos,
+    };
+  }, [rescPeriodo]);
+
+  // #10 Funil de Processamento de Admissões
+  const funil = useMemo(() => {
+    const total = filtered.length;
+    const comCargo = filtered.filter((a) => a.cargo).length;
+    const comSecretaria = filtered.filter((a) => a.secretaria).length;
+    const efetivados = filtered.filter((a) => a.data_efetiva).length;
+    const comVinculo = filtered.filter((a) => a.vinculo_categoria && a.vinculo_categoria !== "Outros").length;
+    return [
+      { etapa: "Autorizações", qtd: total },
+      { etapa: "Cargo Atribuído", qtd: comCargo },
+      { etapa: "Lotação Definida", qtd: comSecretaria },
+      { etapa: "Vínculo Formalizado", qtd: comVinculo },
+      { etapa: "Posse Efetivada", qtd: efetivados },
+    ];
+  }, [filtered]);
+
+  // #11 Eficiência por Secretaria (score composto)
+  const eficienciaSec = useMemo(() => {
+    type Row = { secretaria: string; admissoes: number; vacancia: number; retencao: number; score: number };
+    const map = new Map<string, { adm: number; vSoma: number; vN: number; precoces: number }>();
+    for (const a of filtered) {
+      const s = a.secretaria || "—";
+      if (!map.has(s)) map.set(s, { adm: 0, vSoma: 0, vN: 0, precoces: 0 });
+      const r = map.get(s)!;
+      r.adm += 1;
+      if (typeof a.vacanciaDias === "number") { r.vSoma += a.vacanciaDias; r.vN += 1; }
+    }
+    for (const m of alerts.morteInfantil) {
+      const s = m.secretaria || "—";
+      if (map.has(s)) map.get(s)!.precoces += 1;
+    }
+    const rows: Row[] = Array.from(map, ([secretaria, r]) => {
+      const vacancia = r.vN > 0 ? Math.round(r.vSoma / r.vN) : 0;
+      const retencao = r.adm > 0 ? Math.round((1 - r.precoces / r.adm) * 100) : 100;
+      // score: 0–100 — penaliza vacância e bonifica retenção
+      const score = Math.max(0, Math.min(100, Math.round(retencao - vacancia / 5)));
+      return { secretaria, admissoes: r.adm, vacancia, retencao, score };
+    }).filter((r) => r.admissoes >= 3);
+    rows.sort((a, b) => b.score - a.score);
+    return rows.slice(0, 12);
+  }, [filtered, alerts.morteInfantil]);
+
+  // #12 Linha do Tempo de Movimentações (mensal)
+  const timeline = useMemo(() => {
+    const m = new Map<string, { mes: string; admissoes: number; desligamentos: number }>();
+    const key = (d: string) => d.slice(0, 7); // YYYY-MM
+    for (const a of filtered) {
+      if (!a.data_efetiva) continue;
+      const k = key(a.data_efetiva);
+      if (!m.has(k)) m.set(k, { mes: k, admissoes: 0, desligamentos: 0 });
+      m.get(k)!.admissoes += 1;
+    }
+    for (const r of rescPeriodo) {
+      if (!r.data_rescisao) continue;
+      const k = key(r.data_rescisao);
+      if (!m.has(k)) m.set(k, { mes: k, admissoes: 0, desligamentos: 0 });
+      m.get(k)!.desligamentos += 1;
+    }
+    return Array.from(m.values())
+      .sort((a, b) => a.mes.localeCompare(b.mes))
+      .map((r) => ({ ...r, saldo: r.admissoes - r.desligamentos }));
+  }, [filtered, rescPeriodo]);
+
+  // #13 Reingresso analítico
+  const reingresso = useMemo(() => {
+    const rows = alerts.bumerangue;
+    const porModalidade = new Map<string, number>();
+    const tempos: number[] = [];
+    for (const r of rows) {
+      const k = r.origemTipo === "Ex-Efetivo" ? "Novo concurso (após efetivo)"
+        : r.origemTipo === "Ex-Estagiário" ? "Ingresso pós-estágio"
+        : r.origemTipo === "Ex-Comissionado" ? "Recondução / pós-comissão"
+        : r.origemTipo === "Ex-Contrato" ? "Aproveitamento de cadastro"
+        : "Reingresso geral";
+      porModalidade.set(k, (porModalidade.get(k) ?? 0) + 1);
+      if (r.rescisaoPrevia && r.data_efetiva) {
+        const t = (new Date(r.data_efetiva).getTime() - new Date(r.rescisaoPrevia.data_rescisao).getTime()) / 86400000 / 30;
+        if (t > 0) tempos.push(t);
+      }
+    }
+    const tempoMedio = tempos.length ? Math.round(tempos.reduce((s, t) => s + t, 0) / tempos.length) : 0;
+    return {
+      total: rows.length,
+      porModalidade: Array.from(porModalidade, ([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd),
+      tempoMedio,
+    };
+  }, [alerts.bumerangue]);
+
+  // #14 Risco de Sucessão — cargos críticos (alta saída sem reposição equivalente)
+  const riscoSucessao = useMemo(() => {
+    const m = new Map<string, { cargo: string; saidas: number; entradas: number; deficit: number; veteranos: number }>();
+    for (const a of filtered) {
+      const c = (a.cargo || "—").trim();
+      if (!m.has(c)) m.set(c, { cargo: c, saidas: 0, entradas: 0, deficit: 0, veteranos: 0 });
+      m.get(c)!.entradas += 1;
+    }
+    for (const r of rescPeriodo) {
+      const c = (r.cargo_nome || "—").trim();
+      if (!m.has(c)) m.set(c, { cargo: c, saidas: 0, entradas: 0, deficit: 0, veteranos: 0 });
+      const row = m.get(c)!;
+      row.saidas += 1;
+      if ((r.dias_permanencia ?? 0) >= 3650) row.veteranos += 1;
+    }
+    const rows = Array.from(m.values())
+      .map((r) => ({ ...r, deficit: r.saidas - r.entradas }))
+      .filter((r) => r.saidas >= 2);
+    const semSucessor = rows.filter((r) => r.deficit >= 2 && r.veteranos >= 1).sort((a, b) => b.deficit - a.deficit);
+    const emPreparacao = rows.filter((r) => r.deficit >= 1 && r.deficit < 2);
+    const cobertos = rows.filter((r) => r.deficit <= 0);
+    const coberturaPct = rows.length > 0 ? Math.round((cobertos.length / rows.length) * 100) : 100;
+    return { semSucessor: semSucessor.slice(0, 8), emPreparacao: emPreparacao.length, cobertos: cobertos.length, coberturaPct };
+  }, [filtered, rescPeriodo]);
+
   // ---------------- Drill-down ----------------
   const [openJornada, setOpenJornada] = useState<Enriched | null>(null);
   // Generic chart drill-down: a clicked chart segment opens this modal
