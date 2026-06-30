@@ -37,7 +37,7 @@ const dashQuery = queryOptions({
   queryFn: () => getDashboardData(),
 });
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/dashboard")({
   ssr: false,
   head: () => ({
     meta: [
