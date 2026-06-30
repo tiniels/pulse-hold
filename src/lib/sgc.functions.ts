@@ -84,7 +84,7 @@ export const updateChamamentoStatus = createServerFn({ method: "POST" })
     }) => input,
   )
   .handler(async ({ data, context }) => {
-    const update: Record<string, unknown> = { status: data.status };
+    const update: { status: string; observacao?: string } = { status: data.status };
     if (data.observacao !== undefined) update.observacao = data.observacao;
     const { error } = await context.supabase
       .from("chamamentos")
