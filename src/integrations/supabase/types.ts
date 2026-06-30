@@ -156,6 +156,120 @@ export type Database = {
           },
         ]
       }
+      chamamentos: {
+        Row: {
+          ano_publicacao: number | null
+          cargo: string | null
+          cargo_normalizado: string | null
+          classificacao: string | null
+          classificacao_num: number | null
+          cota: string | null
+          created_at: string
+          data_inicio: string | null
+          data_memo: string | null
+          data_publicacao: string | null
+          id: string
+          memo_os: string | null
+          motivo: string | null
+          nome: string | null
+          numero: string | null
+          numero_concurso: string | null
+          observacao: string | null
+          prazo_contrato: string | null
+          prontuario: string | null
+          regularizar_concurso: string | null
+          responsavel: string | null
+          secretaria: string
+          status: string
+          tipo_concurso: string | null
+        }
+        Insert: {
+          ano_publicacao?: number | null
+          cargo?: string | null
+          cargo_normalizado?: string | null
+          classificacao?: string | null
+          classificacao_num?: number | null
+          cota?: string | null
+          created_at?: string
+          data_inicio?: string | null
+          data_memo?: string | null
+          data_publicacao?: string | null
+          id?: string
+          memo_os?: string | null
+          motivo?: string | null
+          nome?: string | null
+          numero?: string | null
+          numero_concurso?: string | null
+          observacao?: string | null
+          prazo_contrato?: string | null
+          prontuario?: string | null
+          regularizar_concurso?: string | null
+          responsavel?: string | null
+          secretaria: string
+          status?: string
+          tipo_concurso?: string | null
+        }
+        Update: {
+          ano_publicacao?: number | null
+          cargo?: string | null
+          cargo_normalizado?: string | null
+          classificacao?: string | null
+          classificacao_num?: number | null
+          cota?: string | null
+          created_at?: string
+          data_inicio?: string | null
+          data_memo?: string | null
+          data_publicacao?: string | null
+          id?: string
+          memo_os?: string | null
+          motivo?: string | null
+          nome?: string | null
+          numero?: string | null
+          numero_concurso?: string | null
+          observacao?: string | null
+          prazo_contrato?: string | null
+          prontuario?: string | null
+          regularizar_concurso?: string | null
+          responsavel?: string | null
+          secretaria?: string
+          status?: string
+          tipo_concurso?: string | null
+        }
+        Relationships: []
+      }
+      chamamentos_andamento_2026: {
+        Row: {
+          andamento: string | null
+          cargo: string | null
+          cargo_normalizado: string | null
+          created_at: string
+          fase_kanban: number | null
+          id: string
+          quantidade: number | null
+          secretaria: string
+        }
+        Insert: {
+          andamento?: string | null
+          cargo?: string | null
+          cargo_normalizado?: string | null
+          created_at?: string
+          fase_kanban?: number | null
+          id?: string
+          quantidade?: number | null
+          secretaria: string
+        }
+        Update: {
+          andamento?: string | null
+          cargo?: string | null
+          cargo_normalizado?: string | null
+          created_at?: string
+          fase_kanban?: number | null
+          id?: string
+          quantidade?: number | null
+          secretaria?: string
+        }
+        Relationships: []
+      }
       concurso_publico: {
         Row: {
           cargo: string

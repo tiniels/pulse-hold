@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RescisoesRouteImport } from './routes/rescisoes'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdmissaoRouteImport } from './routes/admissao'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicEditalTipoNumeroRouteImport } from './routes/api/public/edital.$tipo.$numero'
@@ -17,6 +18,11 @@ import { Route as ApiPublicEditalTipoNumeroRouteImport } from './routes/api/publ
 const RescisoesRoute = RescisoesRouteImport.update({
   id: '/rescisoes',
   path: '/rescisoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdmissaoRoute = AdmissaoRouteImport.update({
@@ -39,12 +45,14 @@ const ApiPublicEditalTipoNumeroRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admissao': typeof AdmissaoRoute
+  '/dashboard': typeof DashboardRoute
   '/rescisoes': typeof RescisoesRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admissao': typeof AdmissaoRoute
+  '/dashboard': typeof DashboardRoute
   '/rescisoes': typeof RescisoesRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
@@ -52,6 +60,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admissao': typeof AdmissaoRoute
+  '/dashboard': typeof DashboardRoute
   '/rescisoes': typeof RescisoesRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
@@ -60,14 +69,21 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admissao'
+    | '/dashboard'
     | '/rescisoes'
     | '/api/public/edital/$tipo/$numero'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admissao' | '/rescisoes' | '/api/public/edital/$tipo/$numero'
+  to:
+    | '/'
+    | '/admissao'
+    | '/dashboard'
+    | '/rescisoes'
+    | '/api/public/edital/$tipo/$numero'
   id:
     | '__root__'
     | '/'
     | '/admissao'
+    | '/dashboard'
     | '/rescisoes'
     | '/api/public/edital/$tipo/$numero'
   fileRoutesById: FileRoutesById
@@ -75,6 +91,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdmissaoRoute: typeof AdmissaoRoute
+  DashboardRoute: typeof DashboardRoute
   RescisoesRoute: typeof RescisoesRoute
   ApiPublicEditalTipoNumeroRoute: typeof ApiPublicEditalTipoNumeroRoute
 }
@@ -86,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/rescisoes'
       fullPath: '/rescisoes'
       preLoaderRoute: typeof RescisoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admissao': {
@@ -115,19 +139,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdmissaoRoute: AdmissaoRoute,
+  DashboardRoute: DashboardRoute,
   RescisoesRoute: RescisoesRoute,
   ApiPublicEditalTipoNumeroRoute: ApiPublicEditalTipoNumeroRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
