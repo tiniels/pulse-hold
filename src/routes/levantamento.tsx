@@ -2043,7 +2043,7 @@ function CertameCargosDialog({
     queryKey: ["certame_cargos", certame?.tipo, certame?.numero],
     queryFn: () =>
       getCertameCargosDetalhe({
-        data: { tipo: certame!.tipo, numero: certame!.numero },
+        data: { tipo: certame!.tipo, numero: certame!.numero ?? undefined },
       }),
     enabled,
   });
