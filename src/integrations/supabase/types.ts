@@ -782,6 +782,60 @@ export type Database = {
         }
         Relationships: []
       }
+      prontuarios: {
+        Row: {
+          ano_ingresso: number | null
+          cargo: string | null
+          cargo_normalizado: string | null
+          created_at: string
+          data_inicio: string | null
+          id: string
+          memorando: string | null
+          nome: string
+          nome_normalizado: string | null
+          observacao: string | null
+          prontuario: string
+          secretaria: string | null
+          sheet_origem: string | null
+          telefone: string | null
+          vinculo: string | null
+        }
+        Insert: {
+          ano_ingresso?: number | null
+          cargo?: string | null
+          cargo_normalizado?: string | null
+          created_at?: string
+          data_inicio?: string | null
+          id?: string
+          memorando?: string | null
+          nome: string
+          nome_normalizado?: string | null
+          observacao?: string | null
+          prontuario: string
+          secretaria?: string | null
+          sheet_origem?: string | null
+          telefone?: string | null
+          vinculo?: string | null
+        }
+        Update: {
+          ano_ingresso?: number | null
+          cargo?: string | null
+          cargo_normalizado?: string | null
+          created_at?: string
+          data_inicio?: string | null
+          id?: string
+          memorando?: string | null
+          nome?: string
+          nome_normalizado?: string | null
+          observacao?: string | null
+          prontuario?: string
+          secretaria?: string | null
+          sheet_origem?: string | null
+          telefone?: string | null
+          vinculo?: string | null
+        }
+        Relationships: []
+      }
       rescisoes: {
         Row: {
           cargo_codigo: number | null
