@@ -13,7 +13,6 @@ import { Route as RescisoesRouteImport } from './routes/rescisoes'
 import { Route as LevantamentoRouteImport } from './routes/levantamento'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChamamentosRouteImport } from './routes/chamamentos'
-import { Route as AdmissaoRouteImport } from './routes/admissao'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicEditalTipoNumeroRouteImport } from './routes/api/public/edital.$tipo.$numero'
 
@@ -37,11 +36,6 @@ const ChamamentosRoute = ChamamentosRouteImport.update({
   path: '/chamamentos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdmissaoRoute = AdmissaoRouteImport.update({
-  id: '/admissao',
-  path: '/admissao',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -56,7 +50,6 @@ const ApiPublicEditalTipoNumeroRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admissao': typeof AdmissaoRoute
   '/chamamentos': typeof ChamamentosRoute
   '/dashboard': typeof DashboardRoute
   '/levantamento': typeof LevantamentoRoute
@@ -65,7 +58,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admissao': typeof AdmissaoRoute
   '/chamamentos': typeof ChamamentosRoute
   '/dashboard': typeof DashboardRoute
   '/levantamento': typeof LevantamentoRoute
@@ -75,7 +67,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admissao': typeof AdmissaoRoute
   '/chamamentos': typeof ChamamentosRoute
   '/dashboard': typeof DashboardRoute
   '/levantamento': typeof LevantamentoRoute
@@ -86,7 +77,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admissao'
     | '/chamamentos'
     | '/dashboard'
     | '/levantamento'
@@ -95,7 +85,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admissao'
     | '/chamamentos'
     | '/dashboard'
     | '/levantamento'
@@ -104,7 +93,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/admissao'
     | '/chamamentos'
     | '/dashboard'
     | '/levantamento'
@@ -114,7 +102,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdmissaoRoute: typeof AdmissaoRoute
   ChamamentosRoute: typeof ChamamentosRoute
   DashboardRoute: typeof DashboardRoute
   LevantamentoRoute: typeof LevantamentoRoute
@@ -152,13 +139,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChamamentosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admissao': {
-      id: '/admissao'
-      path: '/admissao'
-      fullPath: '/admissao'
-      preLoaderRoute: typeof AdmissaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -178,7 +158,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdmissaoRoute: AdmissaoRoute,
   ChamamentosRoute: ChamamentosRoute,
   DashboardRoute: DashboardRoute,
   LevantamentoRoute: LevantamentoRoute,
