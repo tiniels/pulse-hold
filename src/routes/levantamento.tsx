@@ -1935,3 +1935,276 @@ function AuditoriaPanel({
     </Card>
   );
 }
+
+// ============================================================
+// Drill-down: Certames -> Cargos -> Fila
+// ============================================================
+
+function CertamesDrillDialog({
+  drill,
+  onClose,
+  onSelectCertame,
+}: {
+  drill: { title: string; items: Certame[] } | null;
+  onClose: () => void;
+  onSelectCertame: (c: Certame) => void;
+}) {
+  const [q, setQ] = useState("");
+  if (!drill) return null;
+  const filtered = drill.items.filter((c) => {
+    if (!q) return true;
+    const s = q.toLowerCase();
+    return (
+      (c.cargo ?? "").toLowerCase().includes(s) ||
+      (c.numero ?? "").toLowerCase().includes(s) ||
+      (c.secretaria ?? "").toLowerCase().includes(s)
+    );
+  });
+  return (
+    <Dialog open={!!drill} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-5xl">
+        <DialogHeader>
+          <DialogTitle className="text-base">
+            {drill.title} · {drill.items.length}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="mb-2">
+          <Input
+            placeholder="Filtrar por cargo, número ou secretaria…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+        <div className="max-h-[70vh] overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Número</TableHead>
+                <TableHead>Cargo</TableHead>
+                <TableHead>Secretaria</TableHead>
+                <TableHead className="text-right">Aprov.</TableHead>
+                <TableHead className="text-right">Disp.</TableHead>
+                <TableHead className="text-right">Atend.</TableHead>
+                <TableHead>Situação</TableHead>
+                <TableHead>Vencimento</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((c) => (
+                <TableRow
+                  key={c.id}
+                  className="cursor-pointer"
+                  onClick={() => onSelectCertame(c)}
+                >
+                  <TableCell>{c.tipo}</TableCell>
+                  <TableCell className="whitespace-nowrap">{c.numero}</TableCell>
+                  <TableCell className="whitespace-nowrap">{c.cargo}</TableCell>
+                  <TableCell className="whitespace-nowrap">{c.secretaria ?? "—"}</TableCell>
+                  <TableCell className="text-right">{c.qtd_aprovados ?? 0}</TableCell>
+                  <TableCell className="text-right">{c.total_disponivel ?? 0}</TableCell>
+                  <TableCell className="text-right">{c.qtd_atendida ?? 0}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {SITUACOES[c.situacao ?? ""]?.label ?? c.situacao ?? "—"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {fmtDate(c.vencimento)}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
+                    Nada encontrado.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CertameCargosDialog({
+  certame,
+  onClose,
+  onSelectCargo,
+}: {
+  certame: Certame | null;
+  onClose: () => void;
+  onSelectCargo: (cargoFilaId: string) => void;
+}) {
+  const enabled = !!certame;
+  const { data, isLoading } = useQuery({
+    queryKey: ["certame_cargos", certame?.tipo, certame?.numero],
+    queryFn: () =>
+      getCertameCargosDetalhe({
+        data: { tipo: certame!.tipo, numero: certame!.numero },
+      }),
+    enabled,
+  });
+  if (!certame) return null;
+  const c = data?.concurso;
+  return (
+    <Dialog open={!!certame} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-5xl">
+        <DialogHeader>
+          <DialogTitle className="text-base">
+            {certame.tipo} {certame.numero} · {certame.cargo}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          {c && (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 rounded border p-3 text-xs">
+              <div><span className="text-muted-foreground">Realização:</span> {fmtDate(c.data_realizacao)}</div>
+              <div><span className="text-muted-foreground">Homologação:</span> {fmtDate(c.data_homologacao)}</div>
+              <div><span className="text-muted-foreground">Vencimento:</span> {fmtDate(c.data_vencimento)}</div>
+              <div><span className="text-muted-foreground">Prorrogado até:</span> {fmtDate(c.prorrogado_ate)}</div>
+            </div>
+          )}
+          {!c && !isLoading && (
+            <p className="rounded border border-amber-500/50 bg-amber-500/10 p-2 text-xs">
+              Este certame do levantamento ainda não possui base de fila importada em <b>concursos</b>.
+              Ao importar as planilhas de concursos correspondentes, a fila detalhada aparecerá aqui.
+            </p>
+          )}
+          <div className="max-h-[60vh] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cargo</TableHead>
+                  <TableHead className="text-right">Aprov.</TableHead>
+                  <TableHead className="text-right">Disponíveis</TableHead>
+                  <TableHead className="text-right">Convocados</TableHead>
+                  <TableHead className="text-right">Salário ref.</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(data?.cargos ?? []).map((c: any) => (
+                  <TableRow key={c.id}>
+                    <TableCell>{c.nome_original}</TableCell>
+                    <TableCell className="text-right">{c.stats.total}</TableCell>
+                    <TableCell className="text-right">{c.stats.disponiveis}</TableCell>
+                    <TableCell className="text-right">{c.stats.convocados}</TableCell>
+                    <TableCell className="text-right">
+                      {c.salario_ref ? fmtBRL(c.salario_ref) : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="ghost" onClick={() => onSelectCargo(c.id)}>
+                        Ver fila
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {isLoading && (
+                  <TableRow><TableCell colSpan={6}>Carregando…</TableCell></TableRow>
+                )}
+                {!isLoading && (data?.cargos?.length ?? 0) === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-xs text-muted-foreground">
+                      Sem cargos ligados a este certame ainda.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FilaCargoDialog({
+  cargoFilaId,
+  onClose,
+}: {
+  cargoFilaId: string | null;
+  onClose: () => void;
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["fila_cargo", cargoFilaId],
+    queryFn: () => getFilaCargoDetalhe({ data: { cargoFilaId: cargoFilaId! } }),
+    enabled: !!cargoFilaId,
+  });
+  if (!cargoFilaId) return null;
+  const cargo = data?.cargo as any;
+  return (
+    <Dialog open={!!cargoFilaId} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-6xl">
+        <DialogHeader>
+          <DialogTitle className="text-base">
+            Fila de convocação · {cargo?.nome_original ?? "…"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[70vh] overflow-auto text-sm">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12 text-right">#</TableHead>
+                <TableHead>Nome</TableHead>
+                <TableHead>Lista</TableHead>
+                <TableHead>Status fila</TableHead>
+                <TableHead>Já foi chamado?</TableHead>
+                <TableHead>Prontuário</TableHead>
+                <TableHead>Vínculo</TableHead>
+                <TableHead>Secretaria</TableHead>
+                <TableHead className="text-right">Nota</TableHead>
+                <TableHead className="text-right">Salário ref.</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data?.candidatos ?? []).map((c: any) => (
+                <TableRow key={c.id}>
+                  <TableCell className="text-right font-mono">{c.classificacao ?? "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap">{c.nome}</TableCell>
+                  <TableCell>{c.lista_tipo ?? "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{c.status ?? "—"}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {c.ja_chamado ? (
+                      <Badge className="bg-emerald-600 text-white">
+                        Sim · {c.chamamentos.length}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">Não</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {c.prontuario ? (
+                      <Badge className="bg-primary text-white">{c.prontuario}</Badge>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell>{c.prontuario_vinculo ?? "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap">{c.prontuario_secretaria ?? "—"}</TableCell>
+                  <TableCell className="text-right">{c.nota ?? "—"}</TableCell>
+                  <TableCell className="text-right">
+                    {c.salario_ref ? fmtBRL(c.salario_ref) : "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {isLoading && (
+                <TableRow><TableCell colSpan={10}>Carregando…</TableCell></TableRow>
+              )}
+              {!isLoading && (data?.candidatos?.length ?? 0) === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center text-xs text-muted-foreground">
+                    Nenhum candidato na fila deste cargo.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
