@@ -164,6 +164,12 @@ function fmtBRL(n: number) {
 
 function LevantamentoInner() {
   const qc = useQueryClient();
+  const [drill, setDrill] = useState<null | {
+    title: string;
+    items: Certame[];
+  }>(null);
+  const [certameSel, setCertameSel] = useState<Certame | null>(null);
+  const [cargoFilaSel, setCargoFilaSel] = useState<string | null>(null);
   const { data: certames = [] } = useQuery({
     queryKey: ["lev_certames"],
     queryFn: () => listCertames(),
