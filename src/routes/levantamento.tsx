@@ -95,6 +95,11 @@ import {
   BarChart3,
 } from "lucide-react";
 import { LoginGate } from "@/components/rescisoes/LoginGate";
+import {
+  getCertameCargosDetalhe,
+  getFilaCargoDetalhe,
+} from "@/lib/chamamentos.functions";
+import { Users } from "lucide-react";
 
 export const Route = createFileRoute("/levantamento")({
   head: () => ({
