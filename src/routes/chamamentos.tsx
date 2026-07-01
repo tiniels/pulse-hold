@@ -5,6 +5,7 @@ import { LoginGate } from "@/components/rescisoes/LoginGate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DrillDialog, type DrillColumn } from "@/components/charts/DrillDialog";
 import {
   Table,
   TableBody,
@@ -80,6 +81,7 @@ function ChamamentosInner() {
   const [status, setStatus] = useState<string>("");
   const [motivo, setMotivo] = useState<string>("");
   const [detail, setDetail] = useState<any>(null);
+  const [drillStatus, setDrillStatus] = useState<string | null>(null);
 
   const filters = { page, pageSize: 50, q: q || null, secretaria: secretaria || null, tipo: tipo || null, status: status || null, motivo: motivo || null };
 
@@ -97,26 +99,16 @@ function ChamamentosInner() {
 
   const kpiCards = useMemo(
     () => [
-      { title: "Total geral", value: kpis?.total ?? 0, icon: <FileSpreadsheet />, tone: "" },
-      { title: "Pendentes", value: kpis?.pendentes ?? 0, icon: <Clock />, tone: "text-amber-600" },
-      { title: "Em andamento", value: kpis?.andamento ?? 0, icon: <Timer />, tone: "text-blue-600" },
-      {
-        title: "Aguardando homologação",
-        value: kpis?.aguardando ?? 0,
-        icon: <AlertTriangle />,
-        tone: "text-amber-600",
-      },
-      {
-        title: "Iniciou / concluídos",
-        value: kpis?.concluidos ?? 0,
-        icon: <CheckCircle2 />,
-        tone: "text-emerald-600",
-      },
-      { title: "Desistências", value: kpis?.desistencia ?? 0, icon: <XCircle />, tone: "text-rose-600" },
-      { title: "Renúncias", value: kpis?.renuncia ?? 0, icon: <XCircle />, tone: "text-orange-600" },
-      { title: "Tempo médio (dias)", value: kpis?.tempoMedioDias ?? 0, icon: <Timer />, tone: "" },
-      { title: "Concursos vigentes", value: kpis?.cpVigentes ?? 0, icon: <Building2 />, tone: "text-primary" },
-      { title: "Seletivos vigentes", value: kpis?.psVigentes ?? 0, icon: <Building2 />, tone: "" },
+      { title: "Total geral", value: kpis?.total ?? 0, icon: <FileSpreadsheet />, tone: "", status: "__ALL__" },
+      { title: "Pendentes", value: kpis?.pendentes ?? 0, icon: <Clock />, tone: "text-amber-600", status: "PENDENTE" },
+      { title: "Em andamento", value: kpis?.andamento ?? 0, icon: <Timer />, tone: "text-blue-600", status: "EM_ANDAMENTO" },
+      { title: "Aguardando homologação", value: kpis?.aguardando ?? 0, icon: <AlertTriangle />, tone: "text-amber-600", status: "AGUARDANDO_HOMOLOGACAO" },
+      { title: "Iniciou / concluídos", value: kpis?.concluidos ?? 0, icon: <CheckCircle2 />, tone: "text-emerald-600", status: "INICIOU" },
+      { title: "Desistências", value: kpis?.desistencia ?? 0, icon: <XCircle />, tone: "text-rose-600", status: "DESISTENCIA" },
+      { title: "Renúncias", value: kpis?.renuncia ?? 0, icon: <XCircle />, tone: "text-orange-600", status: "RENUNCIA" },
+      { title: "Tempo médio (dias)", value: kpis?.tempoMedioDias ?? 0, icon: <Timer />, tone: "", status: null },
+      { title: "Concursos vigentes", value: kpis?.cpVigentes ?? 0, icon: <Building2 />, tone: "text-primary", status: null },
+      { title: "Seletivos vigentes", value: kpis?.psVigentes ?? 0, icon: <Building2 />, tone: "", status: null },
     ],
     [kpis],
   );
@@ -155,7 +147,11 @@ function ChamamentosInner() {
       <div className="mx-auto max-w-7xl space-y-4 p-4">
         <div className="grid gap-3 md:grid-cols-4 lg:grid-cols-5">
           {kpiCards.map((k) => (
-            <Card key={k.title}>
+            <Card
+              key={k.title}
+              className={k.status ? "cursor-pointer transition hover:border-primary hover:shadow-md" : ""}
+              onClick={() => k.status && setDrillStatus(k.status)}
+            >
               <CardContent className="flex items-center justify-between p-3">
                 <div>
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -243,15 +239,15 @@ function ChamamentosInner() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Status</TableHead>
+                        <TableHead>Candidato</TableHead>
                     <TableHead>Cargo</TableHead>
+                        <TableHead>Secretaria</TableHead>
+                        <TableHead>Motivo</TableHead>
                     <TableHead>Concurso</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Secretaria</TableHead>
-                    <TableHead>Motivo</TableHead>
                     <TableHead>Memo</TableHead>
                     <TableHead>Publicação</TableHead>
                     <TableHead className="text-right">Class.</TableHead>
-                    <TableHead>Candidato</TableHead>
                     <TableHead>Prontuário</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Ações</TableHead>
@@ -265,15 +261,15 @@ function ChamamentosInner() {
                         <TableCell>
                           <Badge className={`${st.tone} text-white`}>{st.label}</Badge>
                         </TableCell>
+                            <TableCell className="whitespace-nowrap font-medium">{r.nome ?? "—"}</TableCell>
                         <TableCell className="whitespace-nowrap">{r.cargo}</TableCell>
+                            <TableCell className="whitespace-nowrap">{r.secretaria}</TableCell>
+                            <TableCell className="max-w-56 truncate text-xs">{r.motivo}</TableCell>
                         <TableCell className="whitespace-nowrap">{r.numero_concurso ?? "—"}</TableCell>
                         <TableCell>{r.tipo_concurso ?? "—"}</TableCell>
-                        <TableCell className="whitespace-nowrap">{r.secretaria}</TableCell>
-                        <TableCell className="max-w-56 truncate text-xs">{r.motivo}</TableCell>
                         <TableCell className="whitespace-nowrap">{r.memo_os ?? "—"}</TableCell>
                         <TableCell className="whitespace-nowrap">{r.data_publicacao ?? "—"}</TableCell>
                         <TableCell className="text-right">{r.classificacao ?? "—"}</TableCell>
-                        <TableCell className="whitespace-nowrap">{r.nome ?? "—"}</TableCell>
                         <TableCell className="whitespace-nowrap">{r.prontuario ?? "—"}</TableCell>
                         <TableCell className="whitespace-nowrap">{r.responsavel ?? "—"}</TableCell>
                         <TableCell>
@@ -319,7 +315,62 @@ function ChamamentosInner() {
           qc.invalidateQueries({ queryKey: ["cham_kpis"] });
         }}
       />
+      <KpiDrillDialog
+        status={drillStatus}
+        onClose={() => setDrillStatus(null)}
+        onOpenDetail={(r) => { setDrillStatus(null); setDetail(r); }}
+      />
     </div>
+  );
+}
+
+function KpiDrillDialog({
+  status,
+  onClose,
+  onOpenDetail,
+}: {
+  status: string | null;
+  onClose: () => void;
+  onOpenDetail: (r: any) => void;
+}) {
+  const isAll = status === "__ALL__";
+  const { data } = useQuery({
+    queryKey: ["cham_drill", status],
+    queryFn: () =>
+      listChamamentos({
+        data: {
+          page: 0,
+          pageSize: 1000,
+          status: isAll ? null : status,
+        },
+      }),
+    enabled: !!status,
+  });
+  const rows = data?.rows ?? [];
+  const cols: DrillColumn<any>[] = [
+    { key: "nome", label: "Candidato", value: (r) => r.nome ?? "—" },
+    { key: "cargo", label: "Cargo", value: (r) => r.cargo ?? "—" },
+    { key: "secretaria", label: "Secretaria", value: (r) => r.secretaria ?? "—" },
+    { key: "motivo", label: "Motivo", value: (r) => r.motivo ?? "—" },
+    { key: "numero_concurso", label: "Concurso", value: (r) => `${r.tipo_concurso ?? ""} ${r.numero_concurso ?? "—"}` },
+    { key: "data_publicacao", label: "Publicação", value: (r) => r.data_publicacao ?? "—" },
+    { key: "classificacao", label: "Class.", value: (r) => r.classificacao ?? "—" },
+    { key: "prontuario", label: "Prontuário", value: (r) => r.prontuario ?? "—" },
+  ];
+  const title = isAll
+    ? "Todos os chamamentos"
+    : `Chamamentos — ${STATUS_LABEL[status ?? ""]?.label ?? status ?? ""}`;
+  return (
+    <DrillDialog
+      open={!!status}
+      onClose={onClose}
+      title={title}
+      subtitle="Clique numa linha para abrir o detalhe do candidato"
+      rows={rows}
+      columns={cols}
+      csvName={`chamamentos_${status ?? "todos"}`}
+      onRowClick={onOpenDetail}
+    />
   );
 }
 
