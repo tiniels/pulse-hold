@@ -271,7 +271,9 @@ export const updateChamamentoStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { id: string; status: string; observacao?: string | null }) => i)
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = { status: data.status };
+    const patch: { status: string; observacao?: string | null } = {
+      status: data.status,
+    };
     if (data.observacao !== undefined) patch.observacao = data.observacao;
     const { error } = await context.supabase
       .from("chamamentos")
