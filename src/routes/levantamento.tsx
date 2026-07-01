@@ -496,11 +496,13 @@ function Kpi({
   value,
   icon,
   tone,
+  onClick,
 }: {
   title: string;
   value: string | number;
   icon: React.ReactNode;
   tone?: "ok" | "warn";
+  onClick?: () => void;
 }) {
   const toneClass =
     tone === "ok"
@@ -509,7 +511,10 @@ function Kpi({
         ? "text-amber-600"
         : "text-primary";
   return (
-    <Card>
+    <Card
+      onClick={onClick}
+      className={onClick ? "cursor-pointer transition hover:shadow-md" : ""}
+    >
       <CardContent className="flex items-center justify-between p-3">
         <div>
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
