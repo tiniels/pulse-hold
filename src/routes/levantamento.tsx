@@ -487,6 +487,21 @@ function LevantamentoInner() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <CertamesDrillDialog
+        drill={drill}
+        onClose={() => setDrill(null)}
+        onSelectCertame={(c) => setCertameSel(c)}
+      />
+      <CertameCargosDialog
+        certame={certameSel}
+        onClose={() => setCertameSel(null)}
+        onSelectCargo={(id) => setCargoFilaSel(id)}
+      />
+      <FilaCargoDialog
+        cargoFilaId={cargoFilaSel}
+        onClose={() => setCargoFilaSel(null)}
+      />
     </div>
   );
 }
