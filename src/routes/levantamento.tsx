@@ -295,44 +295,140 @@ function LevantamentoInner() {
       <div className="mx-auto max-w-7xl space-y-4 p-4">
         {/* KPI CARDS */}
         <div className="grid gap-3 md:grid-cols-4 lg:grid-cols-6">
-          <Kpi title="Certames totais" value={kpis.total} icon={<Layers />} />
-          <Kpi title="Ativos" value={kpis.ativos} icon={<CheckCircle2 />} tone="ok" />
-          <Kpi title="Encerrados" value={kpis.encerrados} icon={<Archive />} />
+          <Kpi
+            title="Certames totais"
+            value={kpis.total}
+            icon={<Layers />}
+            onClick={() => setDrill({ title: "Certames totais", items: certames })}
+          />
+          <Kpi
+            title="Ativos"
+            value={kpis.ativos}
+            icon={<CheckCircle2 />}
+            tone="ok"
+            onClick={() =>
+              setDrill({
+                title: "Certames ativos",
+                items: certames.filter(
+                  (c) =>
+                    !c.arquivado &&
+                    c.situacao !== "encerrado" &&
+                    c.situacao !== "cancelado",
+                ),
+              })
+            }
+          />
+          <Kpi
+            title="Encerrados"
+            value={kpis.encerrados}
+            icon={<Archive />}
+            onClick={() =>
+              setDrill({
+                title: "Certames encerrados",
+                items: certames.filter((c) => c.situacao === "encerrado"),
+              })
+            }
+          />
           <Kpi
             title="Próx. vencimento"
             value={kpis.proximoVenc}
             icon={<AlertTriangle />}
             tone="warn"
+            onClick={() =>
+              setDrill({
+                title: "Próximos do vencimento",
+                items: certames.filter((c) => c.situacao === "proximo_vencimento"),
+              })
+            }
           />
-          <Kpi title="Vagas autorizadas" value={kpis.vagas} icon={<Building2 />} />
+          <Kpi
+            title="Vagas autorizadas"
+            value={kpis.vagas}
+            icon={<Building2 />}
+            onClick={() =>
+              setDrill({
+                title: "Certames com vagas autorizadas",
+                items: certames.filter((c) => (c.total_disponivel || 0) > 0),
+              })
+            }
+          />
           <Kpi
             title="Impacto anual (est.)"
             value={fmtBRL(kpis.impactoAnual)}
             icon={<Coins />}
             tone="warn"
           />
-          <Kpi title="Aprovados" value={kpis.aprovados} icon={<TrendingUp />} />
-          <Kpi title="Atendidas" value={kpis.atendidas} icon={<CheckCircle2 />} tone="ok" />
+          <Kpi
+            title="Aprovados"
+            value={kpis.aprovados}
+            icon={<TrendingUp />}
+            onClick={() =>
+              setDrill({
+                title: "Certames com aprovados",
+                items: certames.filter((c) => (c.qtd_aprovados || 0) > 0),
+              })
+            }
+          />
+          <Kpi
+            title="Atendidas"
+            value={kpis.atendidas}
+            icon={<CheckCircle2 />}
+            tone="ok"
+            onClick={() =>
+              setDrill({
+                title: "Certames com vagas atendidas",
+                items: certames.filter((c) => (c.qtd_atendida || 0) > 0),
+              })
+            }
+          />
           <Kpi
             title="Vagas disponíveis"
             value={kpis.disponiveis}
             icon={<Building2 />}
+            onClick={() =>
+              setDrill({
+                title: "Certames com vagas disponíveis",
+                items: certames.filter(
+                  (c) => (c.total_disponivel || 0) - (c.qtd_atendida || 0) > 0,
+                ),
+              })
+            }
           />
           <Kpi
             title="Pedidos abertos"
             value={kpis.pedidosAbertos}
             icon={<Clock />}
+            onClick={() =>
+              setDrill({
+                title: "Certames com pedidos abertos",
+                items: certames.filter((c) => (c.pedidos_abertos || 0) > 0),
+              })
+            }
           />
           <Kpi
             title="Em andamento"
             value={kpis.pedidosAndamento}
             icon={<Clock />}
+            onClick={() =>
+              setDrill({
+                title: "Certames com pedidos em andamento",
+                items: certames.filter((c) => (c.pedidos_andamento || 0) > 0),
+              })
+            }
           />
           <Kpi
             title="Desist./renúncia"
             value={kpis.desist}
             icon={<AlertTriangle />}
             tone="warn"
+            onClick={() =>
+              setDrill({
+                title: "Certames com desistências/renúncias",
+                items: certames.filter(
+                  (c) => (c.desistencias_renuncias || 0) > 0,
+                ),
+              })
+            }
           />
         </div>
 
