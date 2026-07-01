@@ -491,6 +491,240 @@ export type Database = {
         }
         Relationships: []
       }
+      lev_auditoria: {
+        Row: {
+          acao: string
+          created_at: string
+          entidade: string
+          entidade_id: string | null
+          id: string
+          user_agent: string | null
+          usuario_email: string | null
+          usuario_id: string | null
+          valores_antigos: Json | null
+          valores_novos: Json | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          entidade: string
+          entidade_id?: string | null
+          id?: string
+          user_agent?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+          valores_antigos?: Json | null
+          valores_novos?: Json | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          entidade?: string
+          entidade_id?: string | null
+          id?: string
+          user_agent?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+          valores_antigos?: Json | null
+          valores_novos?: Json | null
+        }
+        Relationships: []
+      }
+      lev_certames: {
+        Row: {
+          ano: number | null
+          arquivado: boolean
+          cargo: string
+          created_at: string
+          data_homologacao: string | null
+          desistencias_renuncias: number | null
+          homologacao_status: string | null
+          id: string
+          importacao_id: string | null
+          memo: string | null
+          numero: string | null
+          observacoes: string | null
+          orgao: string | null
+          pedidos_abertos: number | null
+          pedidos_andamento: number | null
+          prorrogacao: string | null
+          prova_pratica: string | null
+          qtd_aprovados: number | null
+          qtd_atendida: number | null
+          regularizar: string | null
+          row_hash: string | null
+          secretaria: string | null
+          situacao: string | null
+          tipo: string
+          total_disponivel: number | null
+          updated_at: string
+          vencimento: string | null
+        }
+        Insert: {
+          ano?: number | null
+          arquivado?: boolean
+          cargo: string
+          created_at?: string
+          data_homologacao?: string | null
+          desistencias_renuncias?: number | null
+          homologacao_status?: string | null
+          id?: string
+          importacao_id?: string | null
+          memo?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          orgao?: string | null
+          pedidos_abertos?: number | null
+          pedidos_andamento?: number | null
+          prorrogacao?: string | null
+          prova_pratica?: string | null
+          qtd_aprovados?: number | null
+          qtd_atendida?: number | null
+          regularizar?: string | null
+          row_hash?: string | null
+          secretaria?: string | null
+          situacao?: string | null
+          tipo: string
+          total_disponivel?: number | null
+          updated_at?: string
+          vencimento?: string | null
+        }
+        Update: {
+          ano?: number | null
+          arquivado?: boolean
+          cargo?: string
+          created_at?: string
+          data_homologacao?: string | null
+          desistencias_renuncias?: number | null
+          homologacao_status?: string | null
+          id?: string
+          importacao_id?: string | null
+          memo?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          orgao?: string | null
+          pedidos_abertos?: number | null
+          pedidos_andamento?: number | null
+          prorrogacao?: string | null
+          prova_pratica?: string | null
+          qtd_aprovados?: number | null
+          qtd_atendida?: number | null
+          regularizar?: string | null
+          row_hash?: string | null
+          secretaria?: string | null
+          situacao?: string | null
+          tipo?: string
+          total_disponivel?: number | null
+          updated_at?: string
+          vencimento?: string | null
+        }
+        Relationships: []
+      }
+      lev_certames_historico: {
+        Row: {
+          certame_id: string | null
+          created_at: string
+          id: string
+          importacao_id: string | null
+          motivo: string | null
+          snapshot: Json
+          versao: number
+        }
+        Insert: {
+          certame_id?: string | null
+          created_at?: string
+          id?: string
+          importacao_id?: string | null
+          motivo?: string | null
+          snapshot: Json
+          versao?: number
+        }
+        Update: {
+          certame_id?: string | null
+          created_at?: string
+          id?: string
+          importacao_id?: string | null
+          motivo?: string | null
+          snapshot?: Json
+          versao?: number
+        }
+        Relationships: []
+      }
+      lev_importacoes: {
+        Row: {
+          alterados: number | null
+          arquivo_nome: string
+          created_at: string
+          id: string
+          inalterados: number | null
+          novos: number | null
+          removidos: number | null
+          resumo: Json | null
+          status: string
+          uploaded_by: string | null
+          versao: number
+        }
+        Insert: {
+          alterados?: number | null
+          arquivo_nome: string
+          created_at?: string
+          id?: string
+          inalterados?: number | null
+          novos?: number | null
+          removidos?: number | null
+          resumo?: Json | null
+          status?: string
+          uploaded_by?: string | null
+          versao?: number
+        }
+        Update: {
+          alterados?: number | null
+          arquivo_nome?: string
+          created_at?: string
+          id?: string
+          inalterados?: number | null
+          novos?: number | null
+          removidos?: number | null
+          resumo?: Json | null
+          status?: string
+          uploaded_by?: string | null
+          versao?: number
+        }
+        Relationships: []
+      }
+      lev_simulacoes: {
+        Row: {
+          cenario: Json
+          created_at: string
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          resultado: Json | null
+          updated_at: string
+        }
+        Insert: {
+          cenario: Json
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          resultado?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          cenario?: Json
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          resultado?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       processo_seletivo: {
         Row: {
           cargo: string
