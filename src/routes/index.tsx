@@ -461,6 +461,11 @@ function SGCInner() {
               <Briefcase className="h-4 w-4" /> Rescisões
             </Button>
           </Link>
+          <Link to="/levantamento">
+            <Button variant="default" size="sm" className="gap-1.5">
+              <FileText className="h-4 w-4" /> Levantamento
+            </Button>
+          </Link>
         </nav>
       </div>
 
