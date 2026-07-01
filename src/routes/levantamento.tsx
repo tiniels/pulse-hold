@@ -276,6 +276,12 @@ function LevantamentoInner() {
                 Dashboard CAB
               </Button>
             </Link>
+            <Link to="/chamamentos">
+              <Button variant="ghost" size="sm">
+                <Users className="mr-1 h-4 w-4" />
+                Chamamentos
+              </Button>
+            </Link>
           </nav>
         </div>
       </header>
