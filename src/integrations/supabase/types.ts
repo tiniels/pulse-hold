@@ -101,11 +101,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "admissoes_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_grupo"
+            referencedColumns: ["grupo_id"]
+          },
+          {
             foreignKeyName: "admissoes_secretaria_id_fkey"
             columns: ["secretaria_id"]
             isOneToOne: false
             referencedRelation: "dim_secretaria"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admissoes_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_secretaria"
+            referencedColumns: ["secretaria_id"]
           },
           {
             foreignKeyName: "admissoes_vinculo_id_fkey"
@@ -327,6 +341,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "chamamentos_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_grupo"
+            referencedColumns: ["grupo_id"]
+          },
+          {
             foreignKeyName: "chamamentos_motivo_id_fkey"
             columns: ["motivo_id"]
             isOneToOne: false
@@ -339,6 +360,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "dim_secretaria"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamamentos_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_secretaria"
+            referencedColumns: ["secretaria_id"]
           },
           {
             foreignKeyName: "chamamentos_situacao_id_fkey"
@@ -575,6 +603,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "dim_cargo_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_grupo"
+            referencedColumns: ["grupo_id"]
+          },
+          {
             foreignKeyName: "dim_cargo_jornada_id_fkey"
             columns: ["jornada_id"]
             isOneToOne: false
@@ -643,6 +678,13 @@ export type Database = {
             referencedRelation: "dim_grupo_cargo"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "dim_cargo_alias_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_grupo"
+            referencedColumns: ["grupo_id"]
+          },
         ]
       }
       dim_especialidade: {
@@ -671,6 +713,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "dim_grupo_cargo"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_especialidade_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_grupo"
+            referencedColumns: ["grupo_id"]
           },
         ]
       }
@@ -843,6 +892,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "dim_secretaria_alias_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_secretaria"
+            referencedColumns: ["secretaria_id"]
+          },
+          {
             foreignKeyName: "dim_secretaria_alias_unidade_id_fkey"
             columns: ["unidade_id"]
             isOneToOne: false
@@ -950,6 +1006,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "dim_secretaria"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_unidade_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_secretaria"
+            referencedColumns: ["secretaria_id"]
           },
         ]
       }
@@ -1104,6 +1167,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "evolucoes_funcionais_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_grupo"
+            referencedColumns: ["grupo_id"]
+          },
+          {
             foreignKeyName: "evolucoes_funcionais_motivo_id_fkey"
             columns: ["motivo_id"]
             isOneToOne: false
@@ -1116,6 +1186,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "dim_secretaria"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evolucoes_funcionais_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_secretaria"
+            referencedColumns: ["secretaria_id"]
           },
           {
             foreignKeyName: "evolucoes_funcionais_vinculo_id_fkey"
@@ -1497,11 +1574,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "prontuarios_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_grupo"
+            referencedColumns: ["grupo_id"]
+          },
+          {
             foreignKeyName: "prontuarios_secretaria_id_fkey"
             columns: ["secretaria_id"]
             isOneToOne: false
             referencedRelation: "dim_secretaria"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prontuarios_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_secretaria"
+            referencedColumns: ["secretaria_id"]
           },
           {
             foreignKeyName: "prontuarios_vinculo_id_fkey"
@@ -1608,6 +1699,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rescisoes_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_grupo"
+            referencedColumns: ["grupo_id"]
+          },
+          {
             foreignKeyName: "rescisoes_motivo_id_fkey"
             columns: ["motivo_id"]
             isOneToOne: false
@@ -1620,6 +1718,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "dim_secretaria"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rescisoes_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_secretaria"
+            referencedColumns: ["secretaria_id"]
           },
           {
             foreignKeyName: "rescisoes_vinculo_id_fkey"
@@ -1674,9 +1779,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_kpi_por_grupo: {
+        Row: {
+          admissoes: number | null
+          chamamentos: number | null
+          grupo_id: string | null
+          grupo_nome: string | null
+          rescisoes: number | null
+          saldo: number | null
+        }
+        Relationships: []
+      }
+      vw_kpi_por_secretaria: {
+        Row: {
+          admissoes: number | null
+          chamamentos: number | null
+          rescisoes: number | null
+          secretaria_id: string | null
+          secretaria_nome: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      _infer_grupo_cargo_id: { Args: { txt_norm: string }; Returns: string }
       _infer_secretaria_id: { Args: { txt_norm: string }; Returns: string }
       norm_txt: { Args: { s: string }; Returns: string }
     }
