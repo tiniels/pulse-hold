@@ -68,9 +68,18 @@ export const listAliases = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const cfg = TIPO_TABLE[data.tipo];
-    const selectCols = data.tipo === "cargo"
-      ? `id, texto_origem_norm, texto_origem, ${cfg.fk}, revisado, confianca`
-      : `id, texto_origem_norm, texto_origem, ${cfg.fk}, revisado`;
+    const hasTextoOrigem = data.tipo === "secretaria";
+    const hasConfianca = data.tipo === "cargo";
+    const selectCols = [
+      "id",
+      "texto_origem_norm",
+      hasTextoOrigem ? "texto_origem" : null,
+      cfg.fk,
+      "revisado",
+      hasConfianca ? "confianca" : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
     let query = supabase.from(cfg.alias).select(selectCols).order("texto_origem_norm");
     if (data.apenasPendentes) query = query.eq("revisado", false);
     const { data: rows, error } = await query.limit(2000);
@@ -82,16 +91,18 @@ export const listAliases = createServerFn({ method: "GET" })
     const map = new Map<string, string>();
     (dims ?? []).forEach((d: any) => map.set(d.id, d[cfg.dimNome]));
 
-    return (rows ?? []).map((r: any): AliasPendente => ({
-      id: r.id,
-      texto_origem_norm: r.texto_origem_norm,
-      texto_origem: r.texto_origem ?? null,
-      canonico_id: r[cfg.fk] ?? null,
-      canonico_nome: r[cfg.fk] ? map.get(r[cfg.fk]) ?? null : null,
-      revisado: !!r.revisado,
-      confianca: r.confianca ?? null,
-      tipo: data.tipo,
-    }));
+    return (rows ?? []).map(
+      (r: any): AliasPendente => ({
+        id: r.id,
+        texto_origem_norm: r.texto_origem_norm,
+        texto_origem: r.texto_origem ?? null,
+        canonico_id: r[cfg.fk] ?? null,
+        canonico_nome: r[cfg.fk] ? (map.get(r[cfg.fk]) ?? null) : null,
+        revisado: !!r.revisado,
+        confianca: r.confianca ?? null,
+        tipo: data.tipo,
+      }),
+    );
   });
 
 export const listDim = createServerFn({ method: "GET" })
@@ -100,10 +111,7 @@ export const listDim = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const cfg = TIPO_TABLE[data.tipo];
     const supabase = context.supabase as any;
-    const { data: rows, error } = await supabase
-      .from(cfg.dim)
-      .select(`id, ${cfg.dimNome}`)
-      .order(cfg.dimNome);
+    const { data: rows, error } = await supabase.from(cfg.dim).select(`id, ${cfg.dimNome}`).order(cfg.dimNome);
     if (error) throw new Error(error.message);
     return (rows ?? []).map((r: any): CanonicalDim => ({ id: r.id, nome: r[cfg.dimNome] }));
   });
