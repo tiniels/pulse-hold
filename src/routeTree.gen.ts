@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RescisoesRouteImport } from './routes/rescisoes'
+import { Route as MdmRouteImport } from './routes/mdm'
 import { Route as LevantamentoRouteImport } from './routes/levantamento'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChamamentosRouteImport } from './routes/chamamentos'
@@ -20,6 +21,11 @@ import { Route as ApiPublicEditalTipoNumeroRouteImport } from './routes/api/publ
 const RescisoesRoute = RescisoesRouteImport.update({
   id: '/rescisoes',
   path: '/rescisoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MdmRoute = MdmRouteImport.update({
+  id: '/mdm',
+  path: '/mdm',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LevantamentoRoute = LevantamentoRouteImport.update({
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/chamamentos': typeof ChamamentosRoute
   '/dashboard': typeof DashboardRoute
   '/levantamento': typeof LevantamentoRoute
+  '/mdm': typeof MdmRoute
   '/rescisoes': typeof RescisoesRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/chamamentos': typeof ChamamentosRoute
   '/dashboard': typeof DashboardRoute
   '/levantamento': typeof LevantamentoRoute
+  '/mdm': typeof MdmRoute
   '/rescisoes': typeof RescisoesRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/chamamentos': typeof ChamamentosRoute
   '/dashboard': typeof DashboardRoute
   '/levantamento': typeof LevantamentoRoute
+  '/mdm': typeof MdmRoute
   '/rescisoes': typeof RescisoesRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/chamamentos'
     | '/dashboard'
     | '/levantamento'
+    | '/mdm'
     | '/rescisoes'
     | '/api/public/edital/$tipo/$numero'
   fileRoutesByTo: FileRoutesByTo
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/chamamentos'
     | '/dashboard'
     | '/levantamento'
+    | '/mdm'
     | '/rescisoes'
     | '/api/public/edital/$tipo/$numero'
   id:
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/chamamentos'
     | '/dashboard'
     | '/levantamento'
+    | '/mdm'
     | '/rescisoes'
     | '/api/public/edital/$tipo/$numero'
   fileRoutesById: FileRoutesById
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   ChamamentosRoute: typeof ChamamentosRoute
   DashboardRoute: typeof DashboardRoute
   LevantamentoRoute: typeof LevantamentoRoute
+  MdmRoute: typeof MdmRoute
   RescisoesRoute: typeof RescisoesRoute
   ApiPublicEditalTipoNumeroRoute: typeof ApiPublicEditalTipoNumeroRoute
 }
@@ -129,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/rescisoes'
       fullPath: '/rescisoes'
       preLoaderRoute: typeof RescisoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mdm': {
+      id: '/mdm'
+      path: '/mdm'
+      fullPath: '/mdm'
+      preLoaderRoute: typeof MdmRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/levantamento': {
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChamamentosRoute: ChamamentosRoute,
   DashboardRoute: DashboardRoute,
   LevantamentoRoute: LevantamentoRoute,
+  MdmRoute: MdmRoute,
   RescisoesRoute: RescisoesRoute,
   ApiPublicEditalTipoNumeroRoute: ApiPublicEditalTipoNumeroRoute,
 }
