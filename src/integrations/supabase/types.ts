@@ -17,53 +17,104 @@ export type Database = {
       admissoes: {
         Row: {
           cargo: string | null
+          cargo_id: string | null
           created_at: string
           data_efetiva: string | null
           data_header: string | null
+          especialidade_id: string | null
+          grupo_cargo_id: string | null
           id: number
           memorando: string | null
           nome: string
           observacao: string | null
           prontuario: string | null
           secretaria: string | null
+          secretaria_id: string | null
           telefone: string | null
           tipo_movimentacao: string | null
           vinculo: string | null
           vinculo_categoria: string | null
+          vinculo_id: string | null
         }
         Insert: {
           cargo?: string | null
+          cargo_id?: string | null
           created_at?: string
           data_efetiva?: string | null
           data_header?: string | null
+          especialidade_id?: string | null
+          grupo_cargo_id?: string | null
           id?: number
           memorando?: string | null
           nome: string
           observacao?: string | null
           prontuario?: string | null
           secretaria?: string | null
+          secretaria_id?: string | null
           telefone?: string | null
           tipo_movimentacao?: string | null
           vinculo?: string | null
           vinculo_categoria?: string | null
+          vinculo_id?: string | null
         }
         Update: {
           cargo?: string | null
+          cargo_id?: string | null
           created_at?: string
           data_efetiva?: string | null
           data_header?: string | null
+          especialidade_id?: string | null
+          grupo_cargo_id?: string | null
           id?: number
           memorando?: string | null
           nome?: string
           observacao?: string | null
           prontuario?: string | null
           secretaria?: string | null
+          secretaria_id?: string | null
           telefone?: string | null
           tipo_movimentacao?: string | null
           vinculo?: string | null
           vinculo_categoria?: string | null
+          vinculo_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "admissoes_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admissoes_especialidade_id_fkey"
+            columns: ["especialidade_id"]
+            isOneToOne: false
+            referencedRelation: "dim_especialidade"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admissoes_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_grupo_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admissoes_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "dim_secretaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admissoes_vinculo_id_fkey"
+            columns: ["vinculo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_vinculo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       candidatos: {
         Row: {
@@ -160,6 +211,7 @@ export type Database = {
         Row: {
           ano_publicacao: number | null
           cargo: string | null
+          cargo_id: string | null
           cargo_normalizado: string | null
           classificacao: string | null
           classificacao_num: number | null
@@ -168,9 +220,12 @@ export type Database = {
           data_inicio: string | null
           data_memo: string | null
           data_publicacao: string | null
+          especialidade_id: string | null
+          grupo_cargo_id: string | null
           id: string
           memo_os: string | null
           motivo: string | null
+          motivo_id: string | null
           nome: string | null
           numero: string | null
           numero_concurso: string | null
@@ -180,12 +235,15 @@ export type Database = {
           regularizar_concurso: string | null
           responsavel: string | null
           secretaria: string
+          secretaria_id: string | null
+          situacao_id: string | null
           status: string
           tipo_concurso: string | null
         }
         Insert: {
           ano_publicacao?: number | null
           cargo?: string | null
+          cargo_id?: string | null
           cargo_normalizado?: string | null
           classificacao?: string | null
           classificacao_num?: number | null
@@ -194,9 +252,12 @@ export type Database = {
           data_inicio?: string | null
           data_memo?: string | null
           data_publicacao?: string | null
+          especialidade_id?: string | null
+          grupo_cargo_id?: string | null
           id?: string
           memo_os?: string | null
           motivo?: string | null
+          motivo_id?: string | null
           nome?: string | null
           numero?: string | null
           numero_concurso?: string | null
@@ -206,12 +267,15 @@ export type Database = {
           regularizar_concurso?: string | null
           responsavel?: string | null
           secretaria: string
+          secretaria_id?: string | null
+          situacao_id?: string | null
           status?: string
           tipo_concurso?: string | null
         }
         Update: {
           ano_publicacao?: number | null
           cargo?: string | null
+          cargo_id?: string | null
           cargo_normalizado?: string | null
           classificacao?: string | null
           classificacao_num?: number | null
@@ -220,9 +284,12 @@ export type Database = {
           data_inicio?: string | null
           data_memo?: string | null
           data_publicacao?: string | null
+          especialidade_id?: string | null
+          grupo_cargo_id?: string | null
           id?: string
           memo_os?: string | null
           motivo?: string | null
+          motivo_id?: string | null
           nome?: string | null
           numero?: string | null
           numero_concurso?: string | null
@@ -232,10 +299,55 @@ export type Database = {
           regularizar_concurso?: string | null
           responsavel?: string | null
           secretaria?: string
+          secretaria_id?: string | null
+          situacao_id?: string | null
           status?: string
           tipo_concurso?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chamamentos_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamamentos_especialidade_id_fkey"
+            columns: ["especialidade_id"]
+            isOneToOne: false
+            referencedRelation: "dim_especialidade"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamamentos_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_grupo_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamamentos_motivo_id_fkey"
+            columns: ["motivo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_motivo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamamentos_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "dim_secretaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamamentos_situacao_id_fkey"
+            columns: ["situacao_id"]
+            isOneToOne: false
+            referencedRelation: "dim_situacao_chamamento"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chamamentos_andamento_2026: {
         Row: {
@@ -416,11 +528,484 @@ export type Database = {
           },
         ]
       }
+      dim_cargo: {
+        Row: {
+          created_at: string
+          especialidade_id: string | null
+          grupo_cargo_id: string
+          id: string
+          jornada_id: string | null
+          nivel: string | null
+          nome_oficial: string
+          vinculo_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          especialidade_id?: string | null
+          grupo_cargo_id: string
+          id?: string
+          jornada_id?: string | null
+          nivel?: string | null
+          nome_oficial: string
+          vinculo_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          especialidade_id?: string | null
+          grupo_cargo_id?: string
+          id?: string
+          jornada_id?: string | null
+          nivel?: string | null
+          nome_oficial?: string
+          vinculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dim_cargo_especialidade_id_fkey"
+            columns: ["especialidade_id"]
+            isOneToOne: false
+            referencedRelation: "dim_especialidade"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_cargo_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_grupo_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_cargo_jornada_id_fkey"
+            columns: ["jornada_id"]
+            isOneToOne: false
+            referencedRelation: "dim_jornada"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_cargo_vinculo_id_fkey"
+            columns: ["vinculo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_vinculo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dim_cargo_alias: {
+        Row: {
+          cargo_id: string | null
+          confianca: number
+          created_at: string
+          especialidade_id: string | null
+          grupo_cargo_id: string | null
+          id: string
+          revisado: boolean
+          texto_origem_norm: string
+        }
+        Insert: {
+          cargo_id?: string | null
+          confianca?: number
+          created_at?: string
+          especialidade_id?: string | null
+          grupo_cargo_id?: string | null
+          id?: string
+          revisado?: boolean
+          texto_origem_norm: string
+        }
+        Update: {
+          cargo_id?: string | null
+          confianca?: number
+          created_at?: string
+          especialidade_id?: string | null
+          grupo_cargo_id?: string | null
+          id?: string
+          revisado?: boolean
+          texto_origem_norm?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dim_cargo_alias_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_cargo_alias_especialidade_id_fkey"
+            columns: ["especialidade_id"]
+            isOneToOne: false
+            referencedRelation: "dim_especialidade"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_cargo_alias_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_grupo_cargo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dim_especialidade: {
+        Row: {
+          created_at: string
+          grupo_cargo_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          grupo_cargo_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          grupo_cargo_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dim_especialidade_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_grupo_cargo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dim_grupo_cargo: {
+        Row: {
+          created_at: string
+          familia_funcional: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          familia_funcional?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          familia_funcional?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      dim_jornada: {
+        Row: {
+          horas_semanais: number | null
+          id: string
+          rotulo: string
+        }
+        Insert: {
+          horas_semanais?: number | null
+          id?: string
+          rotulo: string
+        }
+        Update: {
+          horas_semanais?: number | null
+          id?: string
+          rotulo?: string
+        }
+        Relationships: []
+      }
+      dim_motivo: {
+        Row: {
+          categoria: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          categoria?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          categoria?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      dim_motivo_alias: {
+        Row: {
+          created_at: string
+          id: string
+          motivo_id: string | null
+          revisado: boolean
+          submotivo_id: string | null
+          texto_origem_norm: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motivo_id?: string | null
+          revisado?: boolean
+          submotivo_id?: string | null
+          texto_origem_norm: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motivo_id?: string | null
+          revisado?: boolean
+          submotivo_id?: string | null
+          texto_origem_norm?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dim_motivo_alias_motivo_id_fkey"
+            columns: ["motivo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_motivo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_motivo_alias_submotivo_id_fkey"
+            columns: ["submotivo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_submotivo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dim_secretaria: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome_oficial: string
+          sigla: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome_oficial: string
+          sigla?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome_oficial?: string
+          sigla?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dim_secretaria_alias: {
+        Row: {
+          confianca: number
+          created_at: string
+          fonte: string | null
+          id: string
+          revisado: boolean
+          secretaria_id: string | null
+          texto_origem: string
+          texto_origem_norm: string
+          unidade_id: string | null
+        }
+        Insert: {
+          confianca?: number
+          created_at?: string
+          fonte?: string | null
+          id?: string
+          revisado?: boolean
+          secretaria_id?: string | null
+          texto_origem: string
+          texto_origem_norm: string
+          unidade_id?: string | null
+        }
+        Update: {
+          confianca?: number
+          created_at?: string
+          fonte?: string | null
+          id?: string
+          revisado?: boolean
+          secretaria_id?: string | null
+          texto_origem?: string
+          texto_origem_norm?: string
+          unidade_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dim_secretaria_alias_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "dim_secretaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_secretaria_alias_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "dim_unidade"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dim_situacao_alias: {
+        Row: {
+          id: string
+          revisado: boolean
+          situacao_id: string | null
+          texto_origem_norm: string
+        }
+        Insert: {
+          id?: string
+          revisado?: boolean
+          situacao_id?: string | null
+          texto_origem_norm: string
+        }
+        Update: {
+          id?: string
+          revisado?: boolean
+          situacao_id?: string | null
+          texto_origem_norm?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dim_situacao_alias_situacao_id_fkey"
+            columns: ["situacao_id"]
+            isOneToOne: false
+            referencedRelation: "dim_situacao_chamamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dim_situacao_chamamento: {
+        Row: {
+          id: string
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          id?: string
+          nome: string
+          ordem: number
+        }
+        Update: {
+          id?: string
+          nome?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
+      dim_submotivo: {
+        Row: {
+          id: string
+          motivo_id: string
+          nome: string
+        }
+        Insert: {
+          id?: string
+          motivo_id: string
+          nome: string
+        }
+        Update: {
+          id?: string
+          motivo_id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dim_submotivo_motivo_id_fkey"
+            columns: ["motivo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_motivo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dim_unidade: {
+        Row: {
+          created_at: string
+          id: string
+          nome_oficial: string
+          secretaria_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_oficial: string
+          secretaria_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_oficial?: string
+          secretaria_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dim_unidade_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "dim_secretaria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dim_vinculo: {
+        Row: {
+          id: string
+          nome: string
+        }
+        Insert: {
+          id?: string
+          nome: string
+        }
+        Update: {
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      dim_vinculo_alias: {
+        Row: {
+          created_at: string
+          id: string
+          revisado: boolean
+          texto_origem_norm: string
+          vinculo_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          revisado?: boolean
+          texto_origem_norm: string
+          vinculo_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          revisado?: boolean
+          texto_origem_norm?: string
+          vinculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dim_vinculo_alias_vinculo_id_fkey"
+            columns: ["vinculo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_vinculo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evolucoes_funcionais: {
         Row: {
           cargo_atual_codigo: number | null
           cargo_atual_nome: string | null
           cargo_conciliacao: string | null
+          cargo_id: string | null
           created_at: string
           data_admissao: string | null
           data_rescisao: string | null
@@ -429,22 +1014,27 @@ export type Database = {
           evolucao_data: string | null
           evolucao_fundamento: string | null
           fundamento_categoria: string | null
+          grupo_cargo_id: string | null
           id: number
           matricula: string
+          motivo_id: string | null
           nome: string
           rescisao_codigo: number | null
           rescisao_descricao: string | null
           secretaria: string | null
           secretaria_codigo: number | null
+          secretaria_id: string | null
           secretaria_nome: string | null
           sigla: string | null
           vinculo_codigo: number | null
+          vinculo_id: string | null
           vinculo_nome: string | null
         }
         Insert: {
           cargo_atual_codigo?: number | null
           cargo_atual_nome?: string | null
           cargo_conciliacao?: string | null
+          cargo_id?: string | null
           created_at?: string
           data_admissao?: string | null
           data_rescisao?: string | null
@@ -453,22 +1043,27 @@ export type Database = {
           evolucao_data?: string | null
           evolucao_fundamento?: string | null
           fundamento_categoria?: string | null
+          grupo_cargo_id?: string | null
           id?: number
           matricula: string
+          motivo_id?: string | null
           nome: string
           rescisao_codigo?: number | null
           rescisao_descricao?: string | null
           secretaria?: string | null
           secretaria_codigo?: number | null
+          secretaria_id?: string | null
           secretaria_nome?: string | null
           sigla?: string | null
           vinculo_codigo?: number | null
+          vinculo_id?: string | null
           vinculo_nome?: string | null
         }
         Update: {
           cargo_atual_codigo?: number | null
           cargo_atual_nome?: string | null
           cargo_conciliacao?: string | null
+          cargo_id?: string | null
           created_at?: string
           data_admissao?: string | null
           data_rescisao?: string | null
@@ -477,19 +1072,59 @@ export type Database = {
           evolucao_data?: string | null
           evolucao_fundamento?: string | null
           fundamento_categoria?: string | null
+          grupo_cargo_id?: string | null
           id?: number
           matricula?: string
+          motivo_id?: string | null
           nome?: string
           rescisao_codigo?: number | null
           rescisao_descricao?: string | null
           secretaria?: string | null
           secretaria_codigo?: number | null
+          secretaria_id?: string | null
           secretaria_nome?: string | null
           sigla?: string | null
           vinculo_codigo?: number | null
+          vinculo_id?: string | null
           vinculo_nome?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "evolucoes_funcionais_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evolucoes_funcionais_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_grupo_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evolucoes_funcionais_motivo_id_fkey"
+            columns: ["motivo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_motivo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evolucoes_funcionais_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "dim_secretaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evolucoes_funcionais_vinculo_id_fkey"
+            columns: ["vinculo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_vinculo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lev_auditoria: {
         Row: {
@@ -786,9 +1421,11 @@ export type Database = {
         Row: {
           ano_ingresso: number | null
           cargo: string | null
+          cargo_id: string | null
           cargo_normalizado: string | null
           created_at: string
           data_inicio: string | null
+          grupo_cargo_id: string | null
           id: string
           memorando: string | null
           nome: string
@@ -796,16 +1433,20 @@ export type Database = {
           observacao: string | null
           prontuario: string
           secretaria: string | null
+          secretaria_id: string | null
           sheet_origem: string | null
           telefone: string | null
           vinculo: string | null
+          vinculo_id: string | null
         }
         Insert: {
           ano_ingresso?: number | null
           cargo?: string | null
+          cargo_id?: string | null
           cargo_normalizado?: string | null
           created_at?: string
           data_inicio?: string | null
+          grupo_cargo_id?: string | null
           id?: string
           memorando?: string | null
           nome: string
@@ -813,16 +1454,20 @@ export type Database = {
           observacao?: string | null
           prontuario: string
           secretaria?: string | null
+          secretaria_id?: string | null
           sheet_origem?: string | null
           telefone?: string | null
           vinculo?: string | null
+          vinculo_id?: string | null
         }
         Update: {
           ano_ingresso?: number | null
           cargo?: string | null
+          cargo_id?: string | null
           cargo_normalizado?: string | null
           created_at?: string
           data_inicio?: string | null
+          grupo_cargo_id?: string | null
           id?: string
           memorando?: string | null
           nome?: string
@@ -830,68 +1475,160 @@ export type Database = {
           observacao?: string | null
           prontuario?: string
           secretaria?: string | null
+          secretaria_id?: string | null
           sheet_origem?: string | null
           telefone?: string | null
           vinculo?: string | null
+          vinculo_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prontuarios_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prontuarios_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_grupo_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prontuarios_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "dim_secretaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prontuarios_vinculo_id_fkey"
+            columns: ["vinculo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_vinculo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rescisoes: {
         Row: {
           cargo_codigo: number | null
+          cargo_id: string | null
           cargo_nome: string
           created_at: string
           data_admissao: string
           data_rescisao: string
           dias_permanencia: number
+          especialidade_id: string | null
+          grupo_cargo_id: string | null
           id: number
           matricula: string | null
           motivo_categoria: string
+          motivo_id: string | null
           nome: string
           rescisao_codigo: number
           rescisao_descricao: string
           secretaria_codigo: number | null
+          secretaria_id: string | null
           secretaria_nome: string
           vinculo_categoria: string
+          vinculo_id: string | null
           vinculo_nome: string
         }
         Insert: {
           cargo_codigo?: number | null
+          cargo_id?: string | null
           cargo_nome: string
           created_at?: string
           data_admissao: string
           data_rescisao: string
           dias_permanencia: number
+          especialidade_id?: string | null
+          grupo_cargo_id?: string | null
           id?: number
           matricula?: string | null
           motivo_categoria: string
+          motivo_id?: string | null
           nome: string
           rescisao_codigo: number
           rescisao_descricao: string
           secretaria_codigo?: number | null
+          secretaria_id?: string | null
           secretaria_nome: string
           vinculo_categoria: string
+          vinculo_id?: string | null
           vinculo_nome: string
         }
         Update: {
           cargo_codigo?: number | null
+          cargo_id?: string | null
           cargo_nome?: string
           created_at?: string
           data_admissao?: string
           data_rescisao?: string
           dias_permanencia?: number
+          especialidade_id?: string | null
+          grupo_cargo_id?: string | null
           id?: number
           matricula?: string | null
           motivo_categoria?: string
+          motivo_id?: string | null
           nome?: string
           rescisao_codigo?: number
           rescisao_descricao?: string
           secretaria_codigo?: number | null
+          secretaria_id?: string | null
           secretaria_nome?: string
           vinculo_categoria?: string
+          vinculo_id?: string | null
           vinculo_nome?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rescisoes_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rescisoes_especialidade_id_fkey"
+            columns: ["especialidade_id"]
+            isOneToOne: false
+            referencedRelation: "dim_especialidade"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rescisoes_grupo_cargo_id_fkey"
+            columns: ["grupo_cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_grupo_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rescisoes_motivo_id_fkey"
+            columns: ["motivo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_motivo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rescisoes_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "dim_secretaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rescisoes_vinculo_id_fkey"
+            columns: ["vinculo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_vinculo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vencimentos: {
         Row: {
@@ -940,7 +1677,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      _infer_secretaria_id: { Args: { txt_norm: string }; Returns: string }
+      norm_txt: { Args: { s: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

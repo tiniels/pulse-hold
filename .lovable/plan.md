@@ -1,81 +1,129 @@
+# Plano — Governança de Dados Canônica (MDM)
 
-# Plano de Implementação — Mudar.md
-
-O documento descreve uma transformação muito ampla (filtro global, comparador, drill-down universal, reformulação completa de `/admissao`, painel SOS dos editais, 15 mudanças estruturais por eixo). Vou implementar em **fases enxutas e entregáveis**, marcando o que **depende de dados que hoje não existem na base** para evitar inventar números.
-
----
-
-## Fase 1 — Núcleo Temporal Global (FILTRO + COMPARADOR)
-
-Aplica a **todas as páginas**: `/` (CP/PS), `/rescisoes`, `/admissao`.
-
-1. **`PeriodContext`** (`src/contexts/PeriodContext.tsx`)
-   - `dataInicio`, `dataFim` (default: 01/01/ano atual → hoje).
-   - Persistido em `localStorage` por página.
-2. **`<GlobalPeriodFilter />`** no header — dois date pickers BR (DD/MM/AAAA) + presets (Mês atual, Trimestre, YTD, 12 meses, Personalizado).
-3. **`<PeriodComparator />`** no final de cada página — botão **“+ Adicionar Período”**, N períodos coloridos, gráfico de barras lado a lado dos KPIs principais da página, normalização automática (total / média diária / variação %).
-4. **Refator dos hooks de dados**: cada `useQuery` passa a aceitar `{ dataInicio, dataFim }` e filtra server-side (server functions já existentes ganham `inputValidator` com o range).
-
-## Fase 2 — Drill-down universal em gráficos
-
-Wrapper `<DrillableChart>` que envolve pizza/donut/barra/coluna do Recharts e:
-- intercepta `onClick` da fatia/coluna,
-- abre um `<RegistrosDialog>` listando os servidores/registros da agregação,
-- reusa a tabela compacta já existente em `ServidoresListDialog`.
-
-Aplicado a todos os gráficos de `/rescisoes` e `/admissao`.
-
-## Fase 3 — Reformulação de `/admissao` (linguagem formal + arquitetura em camadas)
-
-- **Cabeçalho**: “Painel de Monitoramento de Movimentação e Sucessão de Pessoal — DP-CAB | N registros | Período: …”.
-- **Renomeação completa** dos KPIs, abas, cards de alerta, colunas e badges conforme tabelas do .md (Variação Líquida, Taxa de Reposição, Aproveitamento de Servidores Internos, Desligamento Precoce, Reingresso, etc.).
-- **Camadas de decisão** (Shneiderman):
-  - Camada 1 — KPIs sempre visíveis.
-  - Camada 2 — abas (Estabilidade, Atrito, Talentos, Eficiência, Risco).
-  - Camada 3 — tabelas colapsadas sob “Expandir detalhamento”.
-- **Balanço Patrimonial de Pessoal**: substitui o card Saldo Líquido por componente com Entradas × Saídas e sparkline 12 meses (usa `admissoes` + `rescisoes`).
-- **Funil de Admissões**: usando os estágios que conseguimos derivar (Admitidos → Em estágio probatório → Estáveis), com gargalos.
-- **Curva de Retenção (Kaplan-Meier simplificado)**: dias entre posse e exoneração da coorte do período.
-- **Reingresso contextualizado**: classifica os 173 por modalidade derivável dos dados (Novo concurso vs. Mesma matrícula recorrente).
-- **Painel de Eficiência por Secretaria**: tabela ranking (Admissões, Vacância, Retenção, Score).
-
-## Fase 4 — Melhorias do painel CP/PS (`/`)
-
-- **3 Views/Abas**: `SOS (≤30 dias) | Planejamento (30–180) | Auditoria`.
-- **Semáforo de Validade** nos cards de edital (🔴 🟡 🟢 ⚪).
-- **Cards de Alerta horizontais** substituindo a tabela longa na view SOS.
-- **Timeline Gantt** dos vencimentos nos próximos 12 meses.
-- **KPI “Risco de Apagão”** = vagas em aberto ÷ candidatos disponíveis (por secretaria).
-- **Funil de Conversão do Certame**: Vagas → Inscritos → Aprovados → Nomeados → Efetivados (até onde os dados permitirem; etapas ausentes ficam vazias com aviso).
-- **Mapa de calor Secretaria × Status** e **Ranking Top 5 críticas**.
-
-## Fase 5 — Itens que precisam de dado novo (fica como TODO/placeholder honesto)
-
-Vou criar os componentes com **estado “Dados não disponíveis — requer importação de …”** em vez de inventar números:
-
-- **Índice de Envelhecimento / Aposentadoria** → precisa `data_nascimento` dos servidores.
-- **Motivos declarados de exoneração** (remuneração, clima…) → precisa coluna `motivo` semântica.
-- **Satisfação 90 dias / Programa de integração** → precisa pesquisa interna.
-- **Custos (R$ 4.200, R$ 2.1M, R$ 8.7M)** → precisa parâmetros de RH.
-- **Plano de Sucessão por cargo** → precisa cadastro de sucessores.
-- **Perícia médica / Lotação como etapas do funil** → precisa workflow do RH.
+Objetivo: substituir campos texto livre (secretaria, cargo, vínculo, motivo, jornada, unidade) por FKs para dimensões canônicas únicas, com tabelas de alias para mapear todas as variantes históricas. Todas as 6 páginas passam a consumir as mesmas entidades.
 
 ---
 
-## Detalhes técnicos
+## Fase 1 — Dimensões canônicas (migration única)
 
-- Stack atual já tem TanStack Start + Query + Recharts + shadcn — toda a Fase 1–4 cabe sem novas dependências (exceto `date-fns` se ainda não estiver, e talvez `react-day-picker` que já vem com shadcn).
-- Filtragem por período é feita nas server functions (`.gte('data', inicio).lte('data', fim)`) — sem quebrar RLS atual.
-- Comparador faz N queries paralelas via `useQueries`, sem mudança de schema.
-- Drill-down não precisa de schema novo: reaproveita as listas já carregadas.
-- Nenhuma migration nova é necessária para Fases 1–4.
+Novas tabelas:
+
+```
+dim_secretaria         (id, nome_oficial, sigla, ativo)
+dim_secretaria_alias   (id, texto_origem_norm UNIQUE, secretaria_id, unidade_id?, confianca, fonte, revisado)
+dim_unidade            (id, secretaria_id, nome_oficial)
+dim_grupo_cargo        (id, nome, familia_funcional)   -- Médico, Professor, Enfermeiro...
+dim_especialidade      (id, grupo_cargo_id, nome)      -- Pediatra, PEB I...
+dim_cargo              (id, grupo_cargo_id, especialidade_id?, nome_oficial, nivel, jornada_id?, vinculo_id?)
+dim_cargo_alias        (id, texto_origem_norm UNIQUE, cargo_id?, grupo_cargo_id, especialidade_id?, confianca, revisado)
+dim_vinculo            (id, nome)                       -- Estatutário, CLT, Temporário...
+dim_vinculo_alias      (id, texto_origem_norm UNIQUE, vinculo_id, revisado)
+dim_jornada            (id, horas_semanais, rotulo)     -- 20h, 40h, Plantão
+dim_motivo             (id, nome, categoria)            -- EXONERAÇÃO, APOSENTADORIA...
+dim_submotivo          (id, motivo_id, nome)            -- a pedido, ofício
+dim_motivo_alias       (id, texto_origem_norm UNIQUE, motivo_id, submotivo_id?, revisado)
+dim_situacao_chamamento (id, ordem, nome)               -- Planejado→Edital→...→Encerrado
+dim_situacao_alias     (id, texto_origem_norm UNIQUE, situacao_id, revisado)
+```
+
+Function `public.norm_txt(text)` — remove acentos + UPPER + colapsa espaços — usada por todos os aliases (UNIQUE key).
+
+## Fase 2 — Semear a partir do cargos.csv + extração automática
+
+Migration idempotente que:
+1. Insere ~116 grupos_cargo do `cargos.csv`.
+2. Para cada variação, insere em `dim_cargo_alias` mapeando para o grupo.
+3. Extrai `SELECT DISTINCT` de cada tabela existente (admissoes, rescisoes, chamamentos, prontuarios, evolucoes_funcionais) para os campos: secretaria, cargo, vínculo, motivo — insere em `*_alias` com `confianca=0` e `revisado=false` quando não bate com CSV.
+4. Regras heurísticas (SQL) para pré-classificar:
+   - Secretaria: matching por palavras-chave (EDUC, SAUDE, ADMIN, OBRAS, FAZENDA, ASSIS, MEIO AMB, TRANSPORTE, GABINETE, PLANEJAMENTO…).
+   - Unidade: quando o texto contém `EDUCACAO CRECHE` → Secretaria=Educação + Unidade=Creche; ACS/UBS → Saúde + Unidade=nome da UBS.
+   - Vínculo: regex (ESTAT|CLT|TEMP|COMISS|EFET|CONTRAT).
+   - Motivo: (EXONERA|DEMISS|APOSENT|FALEC|VACAN|RESCIS).
+
+## Fase 3 — FKs canônicas nas tabelas existentes (não destrutivo)
+
+`ALTER TABLE` em admissoes, rescisoes, chamamentos, prontuarios, evolucoes_funcionais:
+
+```
++ secretaria_id      uuid REFERENCES dim_secretaria(id)
++ unidade_id         uuid REFERENCES dim_unidade(id)
++ cargo_id           uuid REFERENCES dim_cargo(id)
++ grupo_cargo_id     uuid REFERENCES dim_grupo_cargo(id)
++ especialidade_id   uuid REFERENCES dim_especialidade(id)
++ vinculo_id         uuid REFERENCES dim_vinculo(id)
++ motivo_id          uuid REFERENCES dim_motivo(id)      -- só rescisoes/chamamentos
++ situacao_id        uuid REFERENCES dim_situacao_chamamento(id)  -- só chamamentos
+```
+
+Colunas texto originais preservadas (retrocompat).
+
+Função `public.resolve_dims()` roda como backfill (uma vez) e como trigger `BEFORE INSERT/UPDATE` — consulta `dim_*_alias` pelo `norm_txt(texto)` e preenche as FKs. Se não achar, insere alias com `revisado=false` e deixa FK nula (fica visível na tela de MDM).
+
+Índices em todas as novas FKs.
+
+## Fase 4 — Camada de consulta unificada (server functions)
+
+Novo módulo `src/lib/canonical.functions.ts`:
+
+```
+listSecretarias() → dim_secretaria
+listGruposCargo() → dim_grupo_cargo + count por tabela
+listCargosByGrupo(grupoId)
+listServidoresByCargo(cargoId)
+listAliasesPendentes(tipo) → aliases com revisado=false para tela MDM
+resolverAlias({tipo, aliasId, canonicoId}) → aprova mapping
+```
+
+Refactor server functions atuais (`admissoes.functions.ts`, `rescisoes.functions.ts`, `chamamentos.functions.ts`, `levantamento.functions.ts`, `evolucoes.functions.ts`, `sgc.functions.ts`) para:
+- filtrar por `secretaria_id`, `grupo_cargo_id`, `especialidade_id`, `vinculo_id`, `motivo_id` (não mais por texto);
+- retornar labels via JOIN com dim_*.
+
+## Fase 5 — UI: refactor das 6 páginas
+
+Componentes compartilhados (`src/components/canonical/`):
+- `<SecretariaSelect />` — dropdown alimentado por `dim_secretaria`.
+- `<GrupoCargoSelect />` / `<CargoTreeSelect />` (Grupo → Especialidade → Cargo).
+- `<VinculoSelect />`, `<MotivoSelect />`.
+- `<CanonicalBreadcrumb />` — Secretaria › Unidade › Grupo › Especialidade › Cargo.
+
+Ajuste por página:
+- **/** (SGC): filtros usam `dim_secretaria` + `dim_grupo_cargo`; cards de edital agrupam por grupo.
+- **/admissao**: hierarquia Secretaria → Grupo → Especialidade → Servidor (não mais texto).
+- **/rescisoes**: pizza de motivos vem de `dim_motivo`; agregação Grupo → Especialidade.
+- **/chamamentos**: fluxo de status = `dim_situacao_chamamento` (ordem numérica); filtros por dim_*.
+- **/levantamento**: agrupamento de cargos por grupo (colapsa 116 → ~40 grupos); drill Grupo → Cargo.
+- **/dashboard**: KPIs consomem views canônicas (`vw_kpi_por_grupo`, `vw_kpi_por_secretaria`).
+
+## Fase 6 — Tela de administração MDM
+
+Nova rota `/mdm` (dentro de `_authenticated`):
+- Abas: Secretarias | Unidades | Cargos | Vínculos | Motivos | Situações.
+- Cada aba: lista de aliases não revisados + botão "Aprovar mapeamento" ou "Criar novo canônico".
+- Ao aprovar, trigger `resolve_dims()` reaplica em todas as tabelas de origem.
 
 ---
 
-## O que peço para confirmar antes de começar
+## Riscos e mitigações
 
-1. **Posso seguir nessa ordem (1→4)**, deixando a Fase 5 marcada como “requer dados adicionais”?
-2. **Quer que eu entregue tudo de uma vez** (commit grande) **ou fase por fase** (cada fase em uma rodada para você validar visualmente)?
-3. Os **valores monetários e metas** citados no .md (R$ 4.200/integração, meta 85% retenção, etc.) são **fixos institucionais** ou devem ser configuráveis numa tela de parâmetros?
+- **Volume de aliases**: com ~2.000 textos distintos, a heurística pode errar; toda tela mostra "N aliases pendentes de revisão" no topo.
+- **Performance do backfill**: rodado em uma transação por tabela; índice temporário em `norm_txt(coluna)`.
+- **Retrocompat**: nada é deletado; código antigo continua funcionando enquanto FKs não estão preenchidas (fallback para texto).
 
-Confirmando isso eu começo já pela Fase 1.
+---
+
+## Entregáveis por commit
+
+1. Migration 1 — dimensões + aliases + `norm_txt` + `resolve_dims`.
+2. Migration 2 — seed dos grupos_cargo a partir do CSV (117 grupos + aliases).
+3. Migration 3 — ALTER TABLE + backfill + triggers.
+4. `src/lib/canonical.functions.ts` + refactor das 5 functions existentes.
+5. Componentes canônicos + refactor das 6 páginas.
+6. Rota `/mdm` com fila de aprovação.
+
+---
+
+## Perguntas antes de começar
+
+1. **Ok que aliases não resolvidos fiquem com FK NULL** (aparecem em "pendentes de revisão") ou prefere que caiam em um bucket "OUTROS / NÃO CLASSIFICADO" para nunca sumir dos dashboards?
+2. **A rota `/mdm` deve ser aberta a todos os usuários autenticados** ou apenas a um papel `admin` (implico criar `user_roles` + `has_role`)?
+3. **Devo entregar tudo em um único conjunto de commits** (levará bastante — 3 migrations + refactor pesado), ou prefere que eu **pause após a Fase 3** (banco pronto + backfill) para você inspecionar os aliases antes do refactor das telas?
