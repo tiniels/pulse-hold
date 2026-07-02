@@ -33,7 +33,7 @@ export type AliasTipo = "cargo" | "secretaria" | "vinculo" | "motivo" | "situaca
 export const listGruposKPI = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
+    const supabase = context.supabase as any;
     const { data, error } = await supabase
       .from("vw_kpi_por_grupo")
       .select("*")
@@ -45,7 +45,7 @@ export const listGruposKPI = createServerFn({ method: "GET" })
 export const listSecretariasKPI = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
+    const supabase = context.supabase as any;
     const { data, error } = await supabase
       .from("vw_kpi_por_secretaria")
       .select("*")
@@ -66,7 +66,7 @@ export const listAliases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { tipo: AliasTipo; apenasPendentes?: boolean }) => data)
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const supabase = context.supabase as any;
     const cfg = TIPO_TABLE[data.tipo];
     const selectCols = data.tipo === "cargo"
       ? `id, texto_origem_norm, texto_origem, ${cfg.fk}, revisado, confianca`
@@ -99,7 +99,8 @@ export const listDim = createServerFn({ method: "GET" })
   .inputValidator((data: { tipo: AliasTipo }) => data)
   .handler(async ({ data, context }) => {
     const cfg = TIPO_TABLE[data.tipo];
-    const { data: rows, error } = await context.supabase
+    const supabase = context.supabase as any;
+    const { data: rows, error } = await supabase
       .from(cfg.dim)
       .select(`id, ${cfg.dimNome}`)
       .order(cfg.dimNome);
@@ -112,9 +113,10 @@ export const resolverAlias = createServerFn({ method: "POST" })
   .inputValidator((data: { tipo: AliasTipo; aliasId: string; canonicoId: string }) => data)
   .handler(async ({ data, context }) => {
     const cfg = TIPO_TABLE[data.tipo];
+    const supabase = context.supabase as any;
     const patch: Record<string, unknown> = { [cfg.fk]: data.canonicoId, revisado: true };
     if (data.tipo === "cargo") patch.confianca = 100;
-    const { error } = await context.supabase.from(cfg.alias).update(patch).eq("id", data.aliasId);
+    const { error } = await supabase.from(cfg.alias).update(patch).eq("id", data.aliasId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
