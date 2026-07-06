@@ -51,7 +51,7 @@ export function DimensionManagerDialog({ tipo, open, onOpenChange }: Props) {
     enabled: open,
   });
 
-  const rows = query.data ?? [];
+  const rows: DimensaoRow[] = query.data ?? [];
   const filtered = useMemo(() => {
     const q = filter.trim().toUpperCase();
     if (!q) return rows;
