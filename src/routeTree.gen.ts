@@ -11,11 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RescisoesRouteImport } from './routes/rescisoes'
 import { Route as MdmRouteImport } from './routes/mdm'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LevantamentoRouteImport } from './routes/levantamento'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChamamentosRouteImport } from './routes/chamamentos'
 import { Route as AdmissaoRouteImport } from './routes/admissao'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as ApiPublicEditalTipoNumeroRouteImport } from './routes/api/public/edital.$tipo.$numero'
 
 const RescisoesRoute = RescisoesRouteImport.update({
@@ -26,6 +30,11 @@ const RescisoesRoute = RescisoesRouteImport.update({
 const MdmRoute = MdmRouteImport.update({
   id: '/mdm',
   path: '/mdm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LevantamentoRoute = LevantamentoRouteImport.update({
@@ -53,6 +62,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicEditalTipoNumeroRoute =
   ApiPublicEditalTipoNumeroRouteImport.update({
     id: '/api/public/edital/$tipo/$numero',
@@ -66,8 +93,12 @@ export interface FileRoutesByFullPath {
   '/chamamentos': typeof ChamamentosRoute
   '/dashboard': typeof DashboardRoute
   '/levantamento': typeof LevantamentoRoute
+  '/mcp': typeof McpRoute
   '/mdm': typeof MdmRoute
   '/rescisoes': typeof RescisoesRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
 export interface FileRoutesByTo {
@@ -76,8 +107,12 @@ export interface FileRoutesByTo {
   '/chamamentos': typeof ChamamentosRoute
   '/dashboard': typeof DashboardRoute
   '/levantamento': typeof LevantamentoRoute
+  '/mcp': typeof McpRoute
   '/mdm': typeof MdmRoute
   '/rescisoes': typeof RescisoesRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
 export interface FileRoutesById {
@@ -87,8 +122,12 @@ export interface FileRoutesById {
   '/chamamentos': typeof ChamamentosRoute
   '/dashboard': typeof DashboardRoute
   '/levantamento': typeof LevantamentoRoute
+  '/mcp': typeof McpRoute
   '/mdm': typeof MdmRoute
   '/rescisoes': typeof RescisoesRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/edital/$tipo/$numero': typeof ApiPublicEditalTipoNumeroRoute
 }
 export interface FileRouteTypes {
@@ -99,8 +138,12 @@ export interface FileRouteTypes {
     | '/chamamentos'
     | '/dashboard'
     | '/levantamento'
+    | '/mcp'
     | '/mdm'
     | '/rescisoes'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
+    | '/.mcp/invoke-tool/$tool'
     | '/api/public/edital/$tipo/$numero'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -109,8 +152,12 @@ export interface FileRouteTypes {
     | '/chamamentos'
     | '/dashboard'
     | '/levantamento'
+    | '/mcp'
     | '/mdm'
     | '/rescisoes'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
+    | '/.mcp/invoke-tool/$tool'
     | '/api/public/edital/$tipo/$numero'
   id:
     | '__root__'
@@ -119,8 +166,12 @@ export interface FileRouteTypes {
     | '/chamamentos'
     | '/dashboard'
     | '/levantamento'
+    | '/mcp'
     | '/mdm'
     | '/rescisoes'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
+    | '/.mcp/invoke-tool/$tool'
     | '/api/public/edital/$tipo/$numero'
   fileRoutesById: FileRoutesById
 }
@@ -130,8 +181,12 @@ export interface RootRouteChildren {
   ChamamentosRoute: typeof ChamamentosRoute
   DashboardRoute: typeof DashboardRoute
   LevantamentoRoute: typeof LevantamentoRoute
+  McpRoute: typeof McpRoute
   MdmRoute: typeof MdmRoute
   RescisoesRoute: typeof RescisoesRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicEditalTipoNumeroRoute: typeof ApiPublicEditalTipoNumeroRoute
 }
 
@@ -149,6 +204,13 @@ declare module '@tanstack/react-router' {
       path: '/mdm'
       fullPath: '/mdm'
       preLoaderRoute: typeof MdmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/levantamento': {
@@ -186,6 +248,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/edital/$tipo/$numero': {
       id: '/api/public/edital/$tipo/$numero'
       path: '/api/public/edital/$tipo/$numero'
@@ -202,8 +285,13 @@ const rootRouteChildren: RootRouteChildren = {
   ChamamentosRoute: ChamamentosRoute,
   DashboardRoute: DashboardRoute,
   LevantamentoRoute: LevantamentoRoute,
+  McpRoute: McpRoute,
   MdmRoute: MdmRoute,
   RescisoesRoute: RescisoesRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicEditalTipoNumeroRoute: ApiPublicEditalTipoNumeroRoute,
 }
 export const routeTree = rootRouteImport
