@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { PeriodProvider } from "../contexts/PeriodContext";
 import { LoadingScreen } from "../components/LoadingScreen";
+import { Toaster } from "../components/ui/sonner";
 import bgAsset from "../assets/cab-background.png.asset.json";
 
 function NotFoundComponent() {
@@ -130,6 +131,7 @@ function RootComponent() {
         <LoadingScreen />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <Toaster />
       </PeriodProvider>
     </QueryClientProvider>
   );

@@ -725,22 +725,28 @@ export type Database = {
       }
       dim_grupo_cargo: {
         Row: {
+          ativo: boolean
           created_at: string
           familia_funcional: string | null
           id: string
           nome: string
+          updated_at: string
         }
         Insert: {
+          ativo?: boolean
           created_at?: string
           familia_funcional?: string | null
           id?: string
           nome: string
+          updated_at?: string
         }
         Update: {
+          ativo?: boolean
           created_at?: string
           familia_funcional?: string | null
           id?: string
           nome?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -764,19 +770,28 @@ export type Database = {
       }
       dim_motivo: {
         Row: {
+          ativo: boolean
           categoria: string | null
+          created_at: string
           id: string
           nome: string
+          updated_at: string
         }
         Insert: {
+          ativo?: boolean
           categoria?: string | null
+          created_at?: string
           id?: string
           nome: string
+          updated_at?: string
         }
         Update: {
+          ativo?: boolean
           categoria?: string | null
+          created_at?: string
           id?: string
           nome?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -938,19 +953,28 @@ export type Database = {
       }
       dim_situacao_chamamento: {
         Row: {
+          ativo: boolean
+          created_at: string
           id: string
           nome: string
           ordem: number
+          updated_at: string
         }
         Insert: {
+          ativo?: boolean
+          created_at?: string
           id?: string
           nome: string
           ordem: number
+          updated_at?: string
         }
         Update: {
+          ativo?: boolean
+          created_at?: string
           id?: string
           nome?: string
           ordem?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1018,16 +1042,25 @@ export type Database = {
       }
       dim_vinculo: {
         Row: {
+          ativo: boolean
+          created_at: string
           id: string
           nome: string
+          updated_at: string
         }
         Insert: {
+          ativo?: boolean
+          created_at?: string
           id?: string
           nome: string
+          updated_at?: string
         }
         Update: {
+          ativo?: boolean
+          created_at?: string
           id?: string
           nome?: string
+          updated_at?: string
         }
         Relationships: []
       }

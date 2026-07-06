@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoginGate } from "@/components/rescisoes/LoginGate";
+import { DimensionManagerDialog } from "@/components/mdm/DimensionManagerDialog";
+import { Settings2 } from "lucide-react";
 import {
   listAliases, listDim, listGruposKPI, listSecretariasKPI, resolverAlias,
   type AliasTipo, type AliasPendente, type CanonicalDim, type GrupoKPI, type SecretariaKPI,
@@ -156,6 +158,7 @@ function KpiOverview() {
 function AliasPanel({ tipo, label }: { tipo: AliasTipo; label: string }) {
   const [filter, setFilter] = useState("");
   const [onlyPending, setOnlyPending] = useState(false);
+  const [managerOpen, setManagerOpen] = useState(false);
 
   const aliasesQuery = useSuspenseQuery(
     queryOptions({
@@ -190,9 +193,12 @@ function AliasPanel({ tipo, label }: { tipo: AliasTipo; label: string }) {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="text-base">Aliases de {label}</CardTitle>
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-3 text-xs">
             <Badge variant="secondary">{totalRev} revisados</Badge>
             <Badge variant={totalPend > 0 ? "destructive" : "outline"}>{totalPend} pendentes</Badge>
+            <Button size="sm" variant="outline" onClick={() => setManagerOpen(true)}>
+              <Settings2 className="mr-1 h-4 w-4" /> Gerenciar Dimensões
+            </Button>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -240,6 +246,7 @@ function AliasPanel({ tipo, label }: { tipo: AliasTipo; label: string }) {
           </Table>
         </div>
       </CardContent>
+      <DimensionManagerDialog tipo={tipo} open={managerOpen} onOpenChange={setManagerOpen} />
     </Card>
   );
 }
