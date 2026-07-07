@@ -1,129 +1,102 @@
-# Plano — Governança de Dados Canônica (MDM)
 
-Objetivo: substituir campos texto livre (secretaria, cargo, vínculo, motivo, jornada, unidade) por FKs para dimensões canônicas únicas, com tabelas de alias para mapear todas as variantes históricas. Todas as 6 páginas passam a consumir as mesmas entidades.
+# Refatoração do Painel Executivo — Base 100% Canônica (MDM)
 
----
+Objetivo: eliminar qualquer uso de texto de origem em `/admissao`. Toda agregação passa a usar IDs canônicos (`secretaria_id`, `grupo_cargo_id`, `cargo_id`, `especialidade_id`, `vinculo_id`, `motivo_id`, `unidade_id`) já resolvidos pelas triggers `resolve_dims_generic`.
 
-## Fase 1 — Dimensões canônicas (migration única)
+## 1. Camada de dados (backend)
 
-Novas tabelas:
+Novo módulo `src/lib/painel-canonico.functions.ts` com server functions (todas com `requireSupabaseAuth`) que retornam DTOs planos, agregados **por ID canônico**:
 
-```
-dim_secretaria         (id, nome_oficial, sigla, ativo)
-dim_secretaria_alias   (id, texto_origem_norm UNIQUE, secretaria_id, unidade_id?, confianca, fonte, revisado)
-dim_unidade            (id, secretaria_id, nome_oficial)
-dim_grupo_cargo        (id, nome, familia_funcional)   -- Médico, Professor, Enfermeiro...
-dim_especialidade      (id, grupo_cargo_id, nome)      -- Pediatra, PEB I...
-dim_cargo              (id, grupo_cargo_id, especialidade_id?, nome_oficial, nivel, jornada_id?, vinculo_id?)
-dim_cargo_alias        (id, texto_origem_norm UNIQUE, cargo_id?, grupo_cargo_id, especialidade_id?, confianca, revisado)
-dim_vinculo            (id, nome)                       -- Estatutário, CLT, Temporário...
-dim_vinculo_alias      (id, texto_origem_norm UNIQUE, vinculo_id, revisado)
-dim_jornada            (id, horas_semanais, rotulo)     -- 20h, 40h, Plantão
-dim_motivo             (id, nome, categoria)            -- EXONERAÇÃO, APOSENTADORIA...
-dim_submotivo          (id, motivo_id, nome)            -- a pedido, ofício
-dim_motivo_alias       (id, texto_origem_norm UNIQUE, motivo_id, submotivo_id?, revisado)
-dim_situacao_chamamento (id, ordem, nome)               -- Planejado→Edital→...→Encerrado
-dim_situacao_alias     (id, texto_origem_norm UNIQUE, situacao_id, revisado)
-```
+- `listDimensoesCanonicas()` — devolve, em uma chamada, todas as dimensões ativas com `id` e `nome`:
+  - `secretarias`: `dim_secretaria` (id, nome_oficial, sigla)
+  - `unidades`: `dim_unidade` (id, nome, secretaria_id)
+  - `grupos_cargo`: `dim_grupo_cargo`
+  - `cargos`: `dim_cargo` (id, nome, grupo_cargo_id)
+  - `especialidades`: `dim_especialidade` (id, nome, cargo_id)
+  - `vinculos`, `motivos`, `situacoes`
+- `listMovimentacoesCanonicas({ fromISO, toISO })` — devolve linhas magras já filtradas pelo período, unificando admissões + rescisões:
+  - campos: `tipo` ("entrada" | "saida"), `data`, `secretaria_id`, `unidade_id`, `grupo_cargo_id`, `cargo_id`, `especialidade_id`, `vinculo_id`, `motivo_id`, `nome`, `matricula`, `saida_categoria` (derivada exclusivamente do `motivo_id` via `dim_motivo.categoria`).
+  - `saida_categoria` vem de `dim_motivo.categoria` (Exoneração/Aposentadoria/Vacância/Rescisão/Falecimento/Outros). **Sem regex sobre texto de origem.**
+- `listCoberturaMDM({ fromISO, toISO })` — devolve, para cada tipo de dimensão, contagens `{ total, classificados, pendentes, aliases_utilizados }` computadas em SQL. Também retorna listas curtas (top 10) de aliases pendentes por tipo, para o card de cobertura.
+- `listAuditoriaAgregacao({ nivel, id })` — para o modal de auditoria: retorna, para uma dimensão canônica, os aliases vinculados, os textos de origem distintos presentes nas bases (`admissoes.secretaria`, `rescisoes.secretaria_nome` etc.), a contagem de registros classificados/não-classificados e o % de cobertura.
 
-Function `public.norm_txt(text)` — remove acentos + UPPER + colapsa espaços — usada por todos os aliases (UNIQUE key).
+Regra de ouro: nenhuma dessas funções projeta colunas textuais das bases (`admissoes.secretaria`, `rescisoes.secretaria_nome`, `.cargo`, `.vinculo`, `.motivo_categoria`) para a UI. O texto só aparece na função de auditoria.
 
-## Fase 2 — Semear a partir do cargos.csv + extração automática
+## 2. Camada de UI (`src/routes/admissao.tsx`)
 
-Migration idempotente que:
-1. Insere ~116 grupos_cargo do `cargos.csv`.
-2. Para cada variação, insere em `dim_cargo_alias` mapeando para o grupo.
-3. Extrai `SELECT DISTINCT` de cada tabela existente (admissoes, rescisoes, chamamentos, prontuarios, evolucoes_funcionais) para os campos: secretaria, cargo, vínculo, motivo — insere em `*_alias` com `confianca=0` e `revisado=false` quando não bate com CSV.
-4. Regras heurísticas (SQL) para pré-classificar:
-   - Secretaria: matching por palavras-chave (EDUC, SAUDE, ADMIN, OBRAS, FAZENDA, ASSIS, MEIO AMB, TRANSPORTE, GABINETE, PLANEJAMENTO…).
-   - Unidade: quando o texto contém `EDUCACAO CRECHE` → Secretaria=Educação + Unidade=Creche; ACS/UBS → Saúde + Unidade=nome da UBS.
-   - Vínculo: regex (ESTAT|CLT|TEMP|COMISS|EFET|CONTRAT).
-   - Motivo: (EXONERA|DEMISS|APOSENT|FALEC|VACAN|RESCIS).
+Reescrever a página. Substituir `admissoes/rescisoes/evolucoes` puros por consumo das novas server functions via `useSuspenseQuery`.
 
-## Fase 3 — FKs canônicas nas tabelas existentes (não destrutivo)
+### 2.1 Filtros superiores
+- Secretaria: `<Select>` populado por `secretarias` canônicas.
+- Cargo: novo `<CargoTreeSelect>` (novo componente em `src/components/painel/CargoTreeSelect.tsx`) que lista grupos canônicos expansíveis em especialidades.
+- Vínculo: `dim_vinculo`.
+- Motivo: `dim_motivo`.
+- Nunca mostrar nomes de origem.
 
-`ALTER TABLE` em admissoes, rescisoes, chamamentos, prontuarios, evolucoes_funcionais:
+### 2.2 KPIs de topo
+Recalculados sobre `listMovimentacoesCanonicas` filtrada. Categorias derivadas apenas do `motivo_id` → `saida_categoria`. Inclui: Entradas, Total Desligados, Saldo Líquido, Exonerações, Aposentadorias, Vacâncias, Falecimentos, Rescisões.
 
-```
-+ secretaria_id      uuid REFERENCES dim_secretaria(id)
-+ unidade_id         uuid REFERENCES dim_unidade(id)
-+ cargo_id           uuid REFERENCES dim_cargo(id)
-+ grupo_cargo_id     uuid REFERENCES dim_grupo_cargo(id)
-+ especialidade_id   uuid REFERENCES dim_especialidade(id)
-+ vinculo_id         uuid REFERENCES dim_vinculo(id)
-+ motivo_id          uuid REFERENCES dim_motivo(id)      -- só rescisoes/chamamentos
-+ situacao_id        uuid REFERENCES dim_situacao_chamamento(id)  -- só chamamentos
+### 2.3 Tabela hierárquica
+Novo componente `src/components/painel/HierarquiaMovimentacao.tsx` (tree grid custom com estado local de nós expandidos por chave `sec:{id} > uni:{id} > gc:{id} > esp:{id}`). Níveis:
+
+```text
+Secretaria Canônica
+  └─ Unidade Canônica (por secretaria)
+       └─ Grupo de Cargo Canônico
+            └─ Especialidade (quando existir)
+                 └─ Servidor (nome + matrícula + tipo/data do evento)
 ```
 
-Colunas texto originais preservadas (retrocompat).
+Cada linha exibe totais consolidados: Entradas, Saídas, Exonerações, Aposentadorias, Vacâncias, Saldo. Agregação feita em memória a partir das linhas canônicas por reduce em `Map<string, totais>` por nível. Ordenação por saldo (mais negativo no topo).
 
-Função `public.resolve_dims()` roda como backfill (uma vez) e como trigger `BEFORE INSERT/UPDATE` — consulta `dim_*_alias` pelo `norm_txt(texto)` e preenche as FKs. Se não achar, insere alias com `revisado=false` e deixa FK nula (fica visível na tela de MDM).
+Ícone `Info` em cada linha (níveis Secretaria/Unidade/Grupo) abre `AuditoriaDialog` chamando `listAuditoriaAgregacao`.
 
-Índices em todas as novas FKs.
+### 2.4 Gráficos inferiores
+- Evolução mensal por Secretaria Canônica: `LineChart` empilhado por `secretaria_id` (top 6 + "Outras").
+- Ranking maior déficit: barras horizontais só de Secretarias Canônicas.
+- Ranking maior superávit: idem.
+- Comparador de períodos (`PeriodComparator`) chamando novamente as server functions para os dois períodos, comparando pelos mesmos `secretaria_id`.
 
-## Fase 4 — Camada de consulta unificada (server functions)
+### 2.5 Card lateral "Cobertura da Normalização (MDM)"
+Novo componente `src/components/painel/CoberturaMDMCard.tsx`. Exibe:
+- Total de registros processados
+- % classificados
+- Aliases utilizados
+- Não classificados (link "Abrir MDM" → `<Link to="/mdm">` quando > 0)
+- Secretarias / Cargos / Motivos pendentes (contagens)
 
-Novo módulo `src/lib/canonical.functions.ts`:
+### 2.6 Auditoria
+`src/components/painel/AuditoriaDialog.tsx` — modal com:
+- Nome canônico
+- Aliases vinculados (com contagem por alias)
+- Nomes de origem detectados nas bases
+- % cobertura, classificados, não classificados
 
-```
-listSecretarias() → dim_secretaria
-listGruposCargo() → dim_grupo_cargo + count por tabela
-listCargosByGrupo(grupoId)
-listServidoresByCargo(cargoId)
-listAliasesPendentes(tipo) → aliases com revisado=false para tela MDM
-resolverAlias({tipo, aliasId, canonicoId}) → aprova mapping
-```
+## 3. Reatividade automática
+Todos os `queryKey` incluem `[fromISO, toISO]` e as chaves das dimensões. Uma alteração no `/mdm` (novo alias, nova dimensão) invalida via `queryClient.invalidateQueries({ queryKey: ["painel"] })` na volta para a tela, ou simplesmente reflete quando o usuário navega novamente (loader re-executa). Nenhuma string hardcoded na UI.
 
-Refactor server functions atuais (`admissoes.functions.ts`, `rescisoes.functions.ts`, `chamamentos.functions.ts`, `levantamento.functions.ts`, `evolucoes.functions.ts`, `sgc.functions.ts`) para:
-- filtrar por `secretaria_id`, `grupo_cargo_id`, `especialidade_id`, `vinculo_id`, `motivo_id` (não mais por texto);
-- retornar labels via JOIN com dim_*.
+## 4. Arquivos
 
-## Fase 5 — UI: refactor das 6 páginas
+**Novos**
+- `src/lib/painel-canonico.functions.ts`
+- `src/components/painel/HierarquiaMovimentacao.tsx`
+- `src/components/painel/CoberturaMDMCard.tsx`
+- `src/components/painel/AuditoriaDialog.tsx`
+- `src/components/painel/CargoTreeSelect.tsx`
 
-Componentes compartilhados (`src/components/canonical/`):
-- `<SecretariaSelect />` — dropdown alimentado por `dim_secretaria`.
-- `<GrupoCargoSelect />` / `<CargoTreeSelect />` (Grupo → Especialidade → Cargo).
-- `<VinculoSelect />`, `<MotivoSelect />`.
-- `<CanonicalBreadcrumb />` — Secretaria › Unidade › Grupo › Especialidade › Cargo.
+**Alterados**
+- `src/routes/admissao.tsx` — reescrito para consumir novas fns e usar novos componentes; remove `classSaida` textual, remove uso de `admissoes.secretaria`, `rescisoes.secretaria_nome`, etc.
 
-Ajuste por página:
-- **/** (SGC): filtros usam `dim_secretaria` + `dim_grupo_cargo`; cards de edital agrupam por grupo.
-- **/admissao**: hierarquia Secretaria → Grupo → Especialidade → Servidor (não mais texto).
-- **/rescisoes**: pizza de motivos vem de `dim_motivo`; agregação Grupo → Especialidade.
-- **/chamamentos**: fluxo de status = `dim_situacao_chamamento` (ordem numérica); filtros por dim_*.
-- **/levantamento**: agrupamento de cargos por grupo (colapsa 116 → ~40 grupos); drill Grupo → Cargo.
-- **/dashboard**: KPIs consomem views canônicas (`vw_kpi_por_grupo`, `vw_kpi_por_secretaria`).
+**Sem alterações de schema** — o modelo canônico e as triggers já existem. Se `dim_motivo.categoria` estiver vazia para motivos existentes, faremos um `UPDATE` via migração de dados (será verificado; se necessário, incluído em um passo separado).
 
-## Fase 6 — Tela de administração MDM
+## 5. Validação
+- Build passa (typecheck).
+- Playwright: login, abre `/admissao`, verifica que filtros mostram apenas nomes canônicos, expande hierarquia até servidor, abre auditoria, verifica card de cobertura.
 
-Nova rota `/mdm` (dentro de `_authenticated`):
-- Abas: Secretarias | Unidades | Cargos | Vínculos | Motivos | Situações.
-- Cada aba: lista de aliases não revisados + botão "Aprovar mapeamento" ou "Criar novo canônico".
-- Ao aprovar, trigger `resolve_dims()` reaplica em todas as tabelas de origem.
+## Detalhes técnicos (para a equipe)
 
----
-
-## Riscos e mitigações
-
-- **Volume de aliases**: com ~2.000 textos distintos, a heurística pode errar; toda tela mostra "N aliases pendentes de revisão" no topo.
-- **Performance do backfill**: rodado em uma transação por tabela; índice temporário em `norm_txt(coluna)`.
-- **Retrocompat**: nada é deletado; código antigo continua funcionando enquanto FKs não estão preenchidas (fallback para texto).
-
----
-
-## Entregáveis por commit
-
-1. Migration 1 — dimensões + aliases + `norm_txt` + `resolve_dims`.
-2. Migration 2 — seed dos grupos_cargo a partir do CSV (117 grupos + aliases).
-3. Migration 3 — ALTER TABLE + backfill + triggers.
-4. `src/lib/canonical.functions.ts` + refactor das 5 functions existentes.
-5. Componentes canônicos + refactor das 6 páginas.
-6. Rota `/mdm` com fila de aprovação.
-
----
-
-## Perguntas antes de começar
-
-1. **Ok que aliases não resolvidos fiquem com FK NULL** (aparecem em "pendentes de revisão") ou prefere que caiam em um bucket "OUTROS / NÃO CLASSIFICADO" para nunca sumir dos dashboards?
-2. **A rota `/mdm` deve ser aberta a todos os usuários autenticados** ou apenas a um papel `admin` (implico criar `user_roles` + `has_role`)?
-3. **Devo entregar tudo em um único conjunto de commits** (levará bastante — 3 migrations + refactor pesado), ou prefere que eu **pause após a Fase 3** (banco pronto + backfill) para você inspecionar os aliases antes do refactor das telas?
+- Server fn `listMovimentacoesCanonicas` faz 2 `SELECT` paralelos em `admissoes` e `rescisoes` projetando **apenas** IDs canônicos + `nome`, `matricula`, `data`. Sem `select('*')`.
+- `saida_categoria` = join com `dim_motivo.categoria`. Fallback "Outros" quando `motivo_id IS NULL`.
+- Paginação mantida (1000 por página).
+- `dim_unidade` hoje tem 4 colunas; verificar FK `secretaria_id`. Se ausente na tabela, o nível "Unidade" é omitido silenciosamente e a hierarquia colapsa para Secretaria → Grupo → Especialidade.
+- Componente hierárquico: estado `Set<string>` de nós abertos; renderização recursiva com indentação por `depth`.
