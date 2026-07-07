@@ -69,6 +69,12 @@ function AdmissaoPage() {
       queryFn: () => callMov({ data: { fromISO, toISO } }),
     }),
   );
+  const movAllQuery = useSuspenseQuery(
+    queryOptions({
+      queryKey: ["painel", "mov", "all"],
+      queryFn: () => callMov({ data: { fromISO: null, toISO: null } }),
+    }),
+  );
   const cobQuery = useSuspenseQuery(
     queryOptions({
       queryKey: ["painel", "cobertura", fromISO, toISO],
@@ -170,12 +176,13 @@ function AdmissaoPage() {
     return { rows, cols };
   }, [entradas, saidas, dims, rankSecretarias]);
 
-  const compareMetrics = async (from: string, to: string): Promise<MetricResult[]> => {
-    const { entradas: eIn, saidas: eOut } = await callMov({ data: { fromISO: from, toISO: to } });
-    const filt = <T extends EntradaCanonica>(rows: T[]) => rows.filter((r) => !secretariaFilter || r.secretaria_id === secretariaFilter);
-    const en = filt(eIn);
-    const sa = filt(eOut);
-    const bucket = (c: string) => sa.filter((s) => (s as SaidaCanonica).saida_categoria === c).length;
+  const compareMetrics = (from: string, to: string): MetricResult[] => {
+    const inRange = (d: string) => d >= from && d <= to;
+    const filt = <T extends EntradaCanonica>(rows: T[]) =>
+      rows.filter((r) => (!secretariaFilter || r.secretaria_id === secretariaFilter) && r.data && inRange(r.data));
+    const en = filt(movAllQuery.data.entradas);
+    const sa = filt(movAllQuery.data.saidas) as SaidaCanonica[];
+    const bucket = (c: string) => sa.filter((s) => s.saida_categoria === c).length;
     return [
       { label: "Entradas", value: en.length },
       { label: "Saídas", value: sa.length },
