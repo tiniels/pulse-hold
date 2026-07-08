@@ -25,7 +25,7 @@ import {
   TrendingUp, Calendar, FileText, Download, ExternalLink,
 } from "lucide-react";
 import { FilaConvocacaoDialog } from "@/components/FilaConvocacaoDialog";
-import { getCargoInfo, formatBRL, nivelTone } from "@/lib/cargo-info";
+import { useCargoLookup, formatBRL, nivelTone } from "@/lib/cargo-info";
 import { LoginGate } from "@/components/rescisoes/LoginGate";
 import { GlobalPeriodFilter } from "@/components/period/GlobalPeriodFilter";
 import { PeriodComparator, type MetricResult } from "@/components/period/PeriodComparator";
@@ -325,6 +325,8 @@ function Index() {
   const filteredPS = useMemo(() =>
     ps.filter(r => !q || r.cargo.toLowerCase().includes(q.toLowerCase())), [ps, q]);
 
+  const cargoLookup = useCargoLookup();
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
@@ -573,7 +575,7 @@ function Index() {
                     </TableHeader>
                     <TableBody>
                       {filteredCP.map(r => {
-                        const info = getCargoInfo(r.cargo);
+                        const info = cargoLookup.get(r.cargo);
                         return (
                           <TableRow key={r.id} className="cursor-pointer" onClick={() => openFila(r.cargo)}>
                             <TableCell className="font-medium">
