@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Phone, Trophy, ChevronRight, Users, Briefcase, Clock, Wallet, GraduationCap, Gift, Plus, FileText, Calendar, AlertCircle } from "lucide-react";
-import { getCargoInfo, formatBRL, nivelTone, displayOrFallback } from "@/lib/cargo-info";
+import { useCargoLookup, formatBRL, nivelTone, displayOrFallback, type CargoInfo } from "@/lib/cargo-info";
 
 function fmtDate(d?: string | null) {
   if (!d) return "—";
@@ -17,7 +17,7 @@ function fmtDate(d?: string | null) {
   return `${day}/${m}/${y}`;
 }
 
-function CargoInfoPanel({ info }: { info: ReturnType<typeof getCargoInfo> }) {
+function CargoInfoPanel({ info }: { info: CargoInfo | null }) {
   if (!info) return null;
   const showSalDiff = !!(info.salarioBase && info.salarioReal && info.salarioBase.trim() !== info.salarioReal.trim());
   return (
@@ -96,7 +96,7 @@ export function FilaConvocacaoDialog({ open, onOpenChange, cargoNome }: Props) {
   const convocarFn = useServerFn(convocarCandidato);
   const qc = useQueryClient();
 
-  const info = getCargoInfo(cargoNome);
+  const info = useCargoLookup().get(cargoNome);
 
   const q = useQuery({
     queryKey: ["fila", cargoNome, lista],
