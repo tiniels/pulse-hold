@@ -21,7 +21,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const cargosQO = queryOptions({ queryKey: ["mdm", "cargos"], queryFn: () => listCargos() });
+const cargosQO = queryOptions({
+  queryKey: ["mdm", "cargos"] as const,
+  queryFn: async (): Promise<CargoCanonico[]> => (await listCargos()) as CargoCanonico[],
+});
 const vinculosQO = queryOptions({
   queryKey: ["mdm", "dim", "vinculo"],
   queryFn: () => listDim({ data: { tipo: "vinculo" } }),
