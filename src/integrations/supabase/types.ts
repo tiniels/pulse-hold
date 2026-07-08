@@ -80,13 +80,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "admissoes_cargo_id_fkey"
-            columns: ["cargo_id"]
-            isOneToOne: false
-            referencedRelation: "dim_cargo"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "admissoes_especialidade_id_fkey"
             columns: ["especialidade_id"]
             isOneToOne: false
@@ -320,13 +313,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "chamamentos_cargo_id_fkey"
-            columns: ["cargo_id"]
-            isOneToOne: false
-            referencedRelation: "dim_cargo"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "chamamentos_especialidade_id_fkey"
             columns: ["especialidade_id"]
             isOneToOne: false
@@ -558,43 +544,57 @@ export type Database = {
       }
       dim_cargo: {
         Row: {
+          adicionais: string[]
+          ativo: boolean
+          beneficios: string[]
           created_at: string
-          especialidade_id: string | null
-          grupo_cargo_id: string
+          grupo_cargo_id: string | null
           id: string
-          jornada_id: string | null
+          jornada: string | null
           nivel: string | null
-          nome_oficial: string
-          vinculo_id: string | null
+          nome: string
+          observacoes: string | null
+          requisitos: string[]
+          salario_base: number | null
+          salario_real_esperado: number | null
+          updated_at: string
+          vinculo_id: string
         }
         Insert: {
+          adicionais?: string[]
+          ativo?: boolean
+          beneficios?: string[]
           created_at?: string
-          especialidade_id?: string | null
-          grupo_cargo_id: string
+          grupo_cargo_id?: string | null
           id?: string
-          jornada_id?: string | null
+          jornada?: string | null
           nivel?: string | null
-          nome_oficial: string
-          vinculo_id?: string | null
+          nome: string
+          observacoes?: string | null
+          requisitos?: string[]
+          salario_base?: number | null
+          salario_real_esperado?: number | null
+          updated_at?: string
+          vinculo_id: string
         }
         Update: {
+          adicionais?: string[]
+          ativo?: boolean
+          beneficios?: string[]
           created_at?: string
-          especialidade_id?: string | null
-          grupo_cargo_id?: string
+          grupo_cargo_id?: string | null
           id?: string
-          jornada_id?: string | null
+          jornada?: string | null
           nivel?: string | null
-          nome_oficial?: string
-          vinculo_id?: string | null
+          nome?: string
+          observacoes?: string | null
+          requisitos?: string[]
+          salario_base?: number | null
+          salario_real_esperado?: number | null
+          updated_at?: string
+          vinculo_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "dim_cargo_especialidade_id_fkey"
-            columns: ["especialidade_id"]
-            isOneToOne: false
-            referencedRelation: "dim_especialidade"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "dim_cargo_grupo_cargo_id_fkey"
             columns: ["grupo_cargo_id"]
@@ -608,13 +608,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_kpi_por_grupo"
             referencedColumns: ["grupo_id"]
-          },
-          {
-            foreignKeyName: "dim_cargo_jornada_id_fkey"
-            columns: ["jornada_id"]
-            isOneToOne: false
-            referencedRelation: "dim_jornada"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "dim_cargo_vinculo_id_fkey"
@@ -657,13 +650,6 @@ export type Database = {
           texto_origem_norm?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "dim_cargo_alias_cargo_id_fkey"
-            columns: ["cargo_id"]
-            isOneToOne: false
-            referencedRelation: "dim_cargo"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "dim_cargo_alias_especialidade_id_fkey"
             columns: ["especialidade_id"]
@@ -1186,13 +1172,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "evolucoes_funcionais_cargo_id_fkey"
-            columns: ["cargo_id"]
-            isOneToOne: false
-            referencedRelation: "dim_cargo"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "evolucoes_funcionais_grupo_cargo_id_fkey"
             columns: ["grupo_cargo_id"]
             isOneToOne: false
@@ -1593,13 +1572,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "prontuarios_cargo_id_fkey"
-            columns: ["cargo_id"]
-            isOneToOne: false
-            referencedRelation: "dim_cargo"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "prontuarios_grupo_cargo_id_fkey"
             columns: ["grupo_cargo_id"]
             isOneToOne: false
@@ -1710,13 +1682,6 @@ export type Database = {
           vinculo_nome?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "rescisoes_cargo_id_fkey"
-            columns: ["cargo_id"]
-            isOneToOne: false
-            referencedRelation: "dim_cargo"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "rescisoes_especialidade_id_fkey"
             columns: ["especialidade_id"]
