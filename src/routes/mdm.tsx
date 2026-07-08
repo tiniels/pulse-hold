@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoginGate } from "@/components/rescisoes/LoginGate";
 import { DimensionManagerDialog } from "@/components/mdm/DimensionManagerDialog";
+import { CargosPanel } from "@/components/mdm/CargosPanel";
 import { Settings2 } from "lucide-react";
 import {
   listAliases, listDim, listGruposKPI, listSecretariasKPI, resolverAlias,
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/mdm")({
 });
 
 const TIPOS: { key: AliasTipo; label: string }[] = [
-  { key: "cargo", label: "Cargos" },
+  { key: "cargo", label: "Relação-Cargos" },
   { key: "secretaria", label: "Secretarias" },
   { key: "vinculo", label: "Vínculos" },
   { key: "motivo", label: "Motivos" },
@@ -58,12 +59,16 @@ function MDMPage() {
 
           <KpiOverview />
 
-          <Tabs defaultValue="cargo">
+          <Tabs defaultValue="cargos">
             <TabsList>
+              <TabsTrigger value="cargos">Cargos</TabsTrigger>
               {TIPOS.map((t) => (
                 <TabsTrigger key={t.key} value={t.key}>{t.label}</TabsTrigger>
               ))}
             </TabsList>
+            <TabsContent value="cargos" className="mt-4">
+              <CargosPanel />
+            </TabsContent>
             {TIPOS.map((t) => (
               <TabsContent key={t.key} value={t.key} className="mt-4">
                 <AliasPanel tipo={t.key} label={t.label} />
