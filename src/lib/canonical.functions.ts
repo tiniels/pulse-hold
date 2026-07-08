@@ -372,3 +372,166 @@ export const listAliasesForDim = createServerFn({ method: "GET" })
       revisado: boolean;
     }>;
   });
+
+// ============================================================
+// dim_cargo — Canonical Cargo entity (SSOT)
+// ============================================================
+
+export type CargoCanonico = {
+  id: string;
+  nome: string;
+  vinculo_id: string;
+  vinculo_nome: string | null;
+  grupo_cargo_id: string | null;
+  grupo_cargo_nome: string | null;
+  salario_base: number | null;
+  salario_real_esperado: number | null;
+  jornada: string | null;
+  nivel: string | null;
+  requisitos: string[];
+  beneficios: string[];
+  adicionais: string[];
+  observacoes: string | null;
+  ativo: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type CargoInput = {
+  nome: string;
+  vinculo_id: string;
+  grupo_cargo_id?: string | null;
+  salario_base?: number | null;
+  salario_real_esperado?: number | null;
+  jornada?: string | null;
+  nivel?: string | null;
+  requisitos?: string[];
+  beneficios?: string[];
+  adicionais?: string[];
+  observacoes?: string | null;
+  ativo?: boolean;
+};
+
+export const listCargos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = context.supabase as any;
+    const { data, error } = await supabase
+      .from("dim_cargo")
+      .select(
+        "id, nome, vinculo_id, grupo_cargo_id, salario_base, salario_real_esperado, jornada, nivel, requisitos, beneficios, adicionais, observacoes, ativo, created_at, updated_at, dim_vinculo(nome), dim_grupo_cargo(nome)",
+      )
+      .order("nome");
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r: any): CargoCanonico => ({
+      id: r.id,
+      nome: r.nome,
+      vinculo_id: r.vinculo_id,
+      vinculo_nome: r.dim_vinculo?.nome ?? null,
+      grupo_cargo_id: r.grupo_cargo_id,
+      grupo_cargo_nome: r.dim_grupo_cargo?.nome ?? null,
+      salario_base: r.salario_base != null ? Number(r.salario_base) : null,
+      salario_real_esperado: r.salario_real_esperado != null ? Number(r.salario_real_esperado) : null,
+      jornada: r.jornada,
+      nivel: r.nivel,
+      requisitos: r.requisitos ?? [],
+      beneficios: r.beneficios ?? [],
+      adicionais: r.adicionais ?? [],
+      observacoes: r.observacoes,
+      ativo: !!r.ativo,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }));
+  });
+
+function normalizeCargoPayload(input: CargoInput): Record<string, unknown> {
+  return {
+    nome: input.nome.trim(),
+    vinculo_id: input.vinculo_id,
+    grupo_cargo_id: input.grupo_cargo_id || null,
+    salario_base: input.salario_base ?? null,
+    salario_real_esperado: input.salario_real_esperado ?? null,
+    jornada: input.jornada?.trim() || null,
+    nivel: input.nivel?.trim() || null,
+    requisitos: (input.requisitos ?? []).map((s) => s.trim()).filter(Boolean),
+    beneficios: (input.beneficios ?? []).map((s) => s.trim()).filter(Boolean),
+    adicionais: (input.adicionais ?? []).map((s) => s.trim()).filter(Boolean),
+    observacoes: input.observacoes?.trim() || null,
+    ativo: input.ativo ?? true,
+  };
+}
+
+export const createCargo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: CargoInput) => data)
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: row, error } = await supabase
+      .from("dim_cargo")
+      .insert(normalizeCargoPayload(data))
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id };
+  });
+
+export const updateCargo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: CargoInput & { id: string }) => data)
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { id, ...rest } = data;
+    const { error } = await supabase
+      .from("dim_cargo")
+      .update(normalizeCargoPayload(rest))
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteCargo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string }) => data)
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { error } = await supabase.from("dim_cargo").delete().eq("id", data.id);
+    if (error) {
+      throw new Error(
+        error.message.includes("violates foreign key")
+          ? "Existem registros vinculados a este cargo. Desative-o primeiro."
+          : error.message,
+      );
+    }
+    return { ok: true };
+  });
+
+export const toggleCargoAtivo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string; ativo: boolean }) => data)
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { error } = await supabase.from("dim_cargo").update({ ativo: data.ativo }).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const duplicateCargo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string }) => data)
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: orig, error } = await supabase
+      .from("dim_cargo")
+      .select("*")
+      .eq("id", data.id)
+      .single();
+    if (error) throw new Error(error.message);
+    const { id, created_at, updated_at, ...rest } = orig as any;
+    const { data: row, error: ierr } = await supabase
+      .from("dim_cargo")
+      .insert({ ...rest, nome: `${rest.nome} (cópia)` })
+      .select("id")
+      .single();
+    if (ierr) throw new Error(ierr.message);
+    return { id: row.id };
+  });
