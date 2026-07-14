@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, Suspense, useCallback, useContext, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -42,44 +42,49 @@ export function DetailsProvider({ children }: { children: ReactNode }) {
 }
 
 function CargoDetailDialog({ target, onClose }: { target: CargoTarget; onClose: () => void }) {
-  const lookup = useCargoLookup();
-  const info = lookup.get(target.nome, target.vinculo ?? null);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Briefcase className="h-4 w-4 text-primary" />
-            <span className="truncate">{info?.cargo ?? target.nome}</span>
+            <span className="truncate">{target.nome}</span>
           </DialogTitle>
         </DialogHeader>
+        <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+          <CargoDetailBody target={target} />
+        </Suspense>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-        {!info ? (
+function CargoDetailBody({ target }: { target: CargoTarget }) {
+  const lookup = useCargoLookup();
+  const info = lookup.get(target.nome, target.vinculo ?? null);
+  if (!info) {
+    return (
           <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
             Este cargo ainda não está cadastrado no MDM (dim_cargo). Cadastre em <b>/mdm → Cargos</b> para que os detalhes apareçam automaticamente aqui.
           </div>
-        ) : (
-          <div className="space-y-4 text-sm">
+    );
+  }
+  return (
+    <div className="space-y-4 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               {info.vinculo && <Badge variant="outline">{info.vinculo}</Badge>}
               {info.nivel && <Badge className={nivelTone(info.nivel)} variant="outline">{info.nivel}</Badge>}
               {info.jornada && <Badge variant="secondary">{info.jornada}</Badge>}
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <Field label="Salário base" value={formatBRL(info.salarioBase)} />
               <Field label="Salário real esperado" value={formatBRL(info.salarioReal)} />
             </div>
-
             <Separator />
-
             <Block label="Requisitos" value={displayOrFallback(info.requisitos)} />
             <Block label="Benefícios" value={displayOrFallback(info.beneficio)} />
             <Block label="Adicionais" value={displayOrFallback(info.adicionais)} />
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }
 
