@@ -15,6 +15,7 @@ import { PeriodProvider } from "../contexts/PeriodContext";
 import { LoadingScreen } from "../components/LoadingScreen";
 import { Toaster } from "../components/ui/sonner";
 import bgAsset from "../assets/cab-background.png.asset.json";
+import { DetailsProvider } from "../components/details/DetailsProvider";
 
 function NotFoundComponent() {
   return (
@@ -128,10 +129,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <PeriodProvider>
-        <LoadingScreen />
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Toaster />
+        <DetailsProvider>
+          <LoadingScreen />
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <Toaster />
+        </DetailsProvider>
       </PeriodProvider>
     </QueryClientProvider>
   );
