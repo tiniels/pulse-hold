@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowUpDown, Download, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Aggregated } from "@/lib/rescisao-aggregate";
+import { CargoLink, ServidorLink } from "@/components/details/DetailsProvider";
 
 type SortKey = "matricula" | "nome" | "cargo_nome" | "secretaria_nome" | "vinculo_categoria";
 
@@ -135,9 +136,15 @@ export function ServidoresListDialog({
                   className={onRowClick ? "cursor-pointer hover:bg-accent/50" : ""}
                   onClick={() => onRowClick?.(r)}
                 >
-                  <TableCell className="text-xs whitespace-nowrap font-mono">{r.matricula ?? "—"}</TableCell>
-                  <TableCell className="text-xs font-medium max-w-[240px] truncate">{r.nome}</TableCell>
-                  <TableCell className="text-xs max-w-[200px] truncate">{r.cargo_nome}</TableCell>
+                  <TableCell className="text-xs whitespace-nowrap font-mono">
+                    <ServidorLink nome={r.nome} prontuario={r.matricula ?? null}>{r.matricula ?? "—"}</ServidorLink>
+                  </TableCell>
+                  <TableCell className="text-xs font-medium max-w-[240px] truncate">
+                    <ServidorLink nome={r.nome} prontuario={r.matricula ?? null}>{r.nome}</ServidorLink>
+                  </TableCell>
+                  <TableCell className="text-xs max-w-[200px] truncate">
+                    <CargoLink nome={r.cargo_nome} vinculo={r.vinculo_categoria}>{r.cargo_nome}</CargoLink>
+                  </TableCell>
                   <TableCell className="text-xs max-w-[180px] truncate">{r.secretaria_nome}</TableCell>
                   <TableCell className="text-xs"><Badge variant="outline">{r.vinculo_categoria}</Badge></TableCell>
                 </TableRow>

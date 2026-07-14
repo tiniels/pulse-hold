@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ChevronRight, ChevronDown, Info, Building2, Briefcase, Layers, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ServidorLink } from "@/components/details/DetailsProvider";
 import type {
   EntradaCanonica,
   SaidaCanonica,
@@ -189,8 +190,10 @@ function renderNode(
             <div className="flex items-center gap-1" style={{ paddingLeft: (depth + 1) * 18 }}>
               <span className="w-4" />
               <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span>{s.nome}</span>
-              {s.matricula && <span className="text-muted-foreground ml-1">· {s.matricula}</span>}
+              <ServidorLink nome={s.nome} prontuario={s.matricula}>
+                <span>{s.nome}</span>
+                {s.matricula && <span className="text-muted-foreground ml-1">· {s.matricula}</span>}
+              </ServidorLink>
             </div>
           </td>
           <td className="p-2 text-right">{s.tipo === "entrada" ? "1" : ""}</td>
