@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafe } from "@/lib/server-errors";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
@@ -64,7 +65,7 @@ async function fetchAllPaged<T>(
   const all: T[] = [];
   for (let from = 0; ; from += pageSize) {
     const { data, error } = await build(from, from + pageSize - 1);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     const rows = (data ?? []) as T[];
     all.push(...rows);
     if (rows.length < pageSize) break;
@@ -86,7 +87,7 @@ export const listDimensoesCanonicas = createServerFn({ method: "GET" })
       supabase.from("dim_motivo").select("id,nome,categoria").order("nome"),
     ]);
     for (const r of [sec, uni, gc, car, esp, vin, mot]) {
-      if (r.error) throw new Error(r.error.message);
+      if (r.error) throwSafe(r.error);
     }
     return {
       secretarias: (sec.data ?? []).map((r: any) => ({ id: r.id, nome: r.nome_oficial, sigla: r.sigla })),
@@ -201,8 +202,8 @@ export const listCoberturaMDM = createServerFn({ method: "POST" })
       if (fromISO) { qTotal = qTotal.gte(dateCol, fromISO); qNotNull = qNotNull.gte(dateCol, fromISO); }
       if (toISO) { qTotal = qTotal.lte(dateCol, toISO); qNotNull = qNotNull.lte(dateCol, toISO); }
       const [t, n] = await Promise.all([qTotal, qNotNull]);
-      if (t.error) throw new Error(t.error.message);
-      if (n.error) throw new Error(n.error.message);
+      if (t.error) throwSafe(t.error);
+      if (n.error) throwSafe(n.error);
       return { total: t.count ?? 0, notNull: n.count ?? 0 };
     }
 
@@ -211,8 +212,8 @@ export const listCoberturaMDM = createServerFn({ method: "POST" })
         supabase.from(aliasTable).select("id", { count: "exact", head: true }).eq("revisado", true).not(fk, "is", null),
         supabase.from(aliasTable).select("id", { count: "exact", head: true }).or(`${fk}.is.null,revisado.eq.false`),
       ]);
-      if (rev.error) throw new Error(rev.error.message);
-      if (pend.error) throw new Error(pend.error.message);
+      if (rev.error) throwSafe(rev.error);
+      if (pend.error) throwSafe(pend.error);
       return { utilizados: rev.count ?? 0, pendentes: pend.count ?? 0 };
     }
 
@@ -365,7 +366,7 @@ export const listAuditoriaAgregacao = createServerFn({ method: "POST" })
         .from(c.t)
         .select("id", { count: "exact", head: true })
         .eq(cfg.fk, data.id);
-      if (error) throw new Error(error.message);
+      if (error) throwSafe(error);
       classificados += count ?? 0;
     }
 
@@ -375,7 +376,7 @@ export const listAuditoriaAgregacao = createServerFn({ method: "POST" })
         .from(c.t)
         .select("id", { count: "exact", head: true })
         .is(cfg.fk, null);
-      if (error) throw new Error(error.message);
+      if (error) throwSafe(error);
       pendentes += count ?? 0;
     }
 

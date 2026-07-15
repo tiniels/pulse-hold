@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafe } from "@/lib/server-errors";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const getDashboardData = createServerFn({ method: "GET" })
@@ -10,9 +11,9 @@ export const getDashboardData = createServerFn({ method: "GET" })
     supabase.from("processo_seletivo").select("*").order("cargo"),
     supabase.from("vencimentos").select("*").order("dias_restantes"),
   ]);
-  if (cp.error) throw new Error(cp.error.message);
-  if (ps.error) throw new Error(ps.error.message);
-  if (venc.error) throw new Error(venc.error.message);
+  if (cp.error) throwSafe(cp.error);
+  if (ps.error) throwSafe(ps.error);
+  if (venc.error) throwSafe(venc.error);
   return {
     cp: cp.data ?? [],
     ps: ps.data ?? [],

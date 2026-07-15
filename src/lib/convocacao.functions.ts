@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafe } from "@/lib/server-errors";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 function normalize(s: string) {
@@ -129,7 +130,7 @@ export const atualizarStatusCandidato = createServerFn({ method: "POST" })
       .from("candidatos")
       .update({ status: data.novoStatus })
       .eq("id", data.candidatoId);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     await supabaseAdmin.from("convocacoes_log").insert({
       candidato_id: data.candidatoId,
       acao: "STATUS",
