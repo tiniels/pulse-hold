@@ -324,11 +324,12 @@ export const deleteDimensao = createServerFn({ method: "POST" })
     const s = DIM_SCHEMAS[data.tipo];
     const { error } = await supabase.from(s.table).delete().eq("id", data.id);
     if (error) {
-      throw new Error(
-        error.message.includes("violates foreign key")
-          ? "Existem registros vinculados a esta dimensão. Desative-a ou remova primeiro os vínculos."
-          : error.message,
-      );
+      if (error.message.includes("violates foreign key")) {
+        throw new Error(
+          "Existem registros vinculados a esta dimensão. Desative-a ou remova primeiro os vínculos.",
+        );
+      }
+      throwSafe(error);
     }
     return { ok: true };
   });
