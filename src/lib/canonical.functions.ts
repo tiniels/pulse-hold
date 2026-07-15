@@ -498,11 +498,10 @@ export const deleteCargo = createServerFn({ method: "POST" })
     const supabase = context.supabase as any;
     const { error } = await supabase.from("dim_cargo").delete().eq("id", data.id);
     if (error) {
-      throw new Error(
-        error.message.includes("violates foreign key")
-          ? "Existem registros vinculados a este cargo. Desative-o primeiro."
-          : error.message,
-      );
+      if (error.message.includes("violates foreign key")) {
+        throw new Error("Existem registros vinculados a este cargo. Desative-o primeiro.");
+      }
+      throwSafe(error);
     }
     return { ok: true };
   });
