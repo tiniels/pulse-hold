@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafe } from "@/lib/server-errors";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type Chamamento = {
@@ -49,7 +50,7 @@ export const listChamamentos = createServerFn({ method: "GET" })
         .select("*")
         .order("data_publicacao", { ascending: false, nullsFirst: false })
         .range(from, from + pageSize - 1);
-      if (error) throw new Error(error.message);
+      if (error) throwSafe(error);
       const rows = (data ?? []) as Chamamento[];
       all.push(...rows);
       if (rows.length < pageSize) break;
@@ -64,7 +65,7 @@ export const listAndamento = createServerFn({ method: "GET" })
       .from("chamamentos_andamento_2026")
       .select("*")
       .order("secretaria");
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (data ?? []) as AndamentoRow[];
   });
 
@@ -90,6 +91,6 @@ export const updateChamamentoStatus = createServerFn({ method: "POST" })
       .from("chamamentos")
       .update(update)
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return { ok: true };
   });

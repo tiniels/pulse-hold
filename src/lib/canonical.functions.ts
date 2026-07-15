@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafe } from "@/lib/server-errors";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type CanonicalDim = { id: string; nome: string };
@@ -126,7 +127,7 @@ export const listGruposKPI = createServerFn({ method: "GET" })
       .from("vw_kpi_por_grupo")
       .select("*")
       .order("admissoes", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (data ?? []) as GrupoKPI[];
   });
 
@@ -138,7 +139,7 @@ export const listSecretariasKPI = createServerFn({ method: "GET" })
       .from("vw_kpi_por_secretaria")
       .select("*")
       .order("admissoes", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (data ?? []) as SecretariaKPI[];
   });
 
@@ -171,7 +172,7 @@ export const listAliases = createServerFn({ method: "GET" })
     let query = supabase.from(cfg.alias).select(selectCols).order("texto_origem_norm");
     if (data.apenasPendentes) query = query.eq("revisado", false);
     const { data: rows, error } = await query.limit(2000);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
 
     // fetch dim labels
     const { data: dims, error: derr } = await supabase.from(cfg.dim).select(`id, ${cfg.dimNome}`);
@@ -200,7 +201,7 @@ export const listDim = createServerFn({ method: "GET" })
     const cfg = TIPO_TABLE[data.tipo];
     const supabase = context.supabase as any;
     const { data: rows, error } = await supabase.from(cfg.dim).select(`id, ${cfg.dimNome}`).order(cfg.dimNome);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (rows ?? []).map((r: any): CanonicalDim => ({ id: r.id, nome: r[cfg.dimNome] }));
   });
 
@@ -213,7 +214,7 @@ export const resolverAlias = createServerFn({ method: "POST" })
     const patch: Record<string, unknown> = { [cfg.fk]: data.canonicoId, revisado: true };
     if (data.tipo === "cargo") patch.confianca = 100;
     const { error } = await supabase.from(cfg.alias).update(patch).eq("id", data.aliasId);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return { ok: true };
   });
 
@@ -234,7 +235,7 @@ export const listDimensoes = createServerFn({ method: "GET" })
       .from(s.table)
       .select(cols.join(", "))
       .order(s.nameField);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
 
     const { data: aliases, error: aerr } = await supabase
       .from(s.aliasTable)
@@ -279,7 +280,7 @@ export const createDimensao = createServerFn({ method: "POST" })
       }
     }
     const { data: row, error } = await supabase.from(s.table).insert(payload).select("id").single();
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return { id: row.id };
   });
 
@@ -311,7 +312,7 @@ export const updateDimensao = createServerFn({ method: "POST" })
       }
     }
     const { error } = await supabase.from(s.table).update(payload).eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return { ok: true };
   });
 
@@ -341,7 +342,7 @@ export const duplicateDimensao = createServerFn({ method: "POST" })
     const cols = [s.nameField, ...s.extraFields.map((f) => f.key)];
     if (s.hasAtivo) cols.push("ativo");
     const { data: orig, error } = await supabase.from(s.table).select(cols.join(", ")).eq("id", data.id).single();
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     const payload: Record<string, unknown> = { ...orig };
     payload[s.nameField] = `${orig[s.nameField]} (cópia)`;
     const { data: row, error: ierr } = await supabase.from(s.table).insert(payload).select("id").single();
@@ -364,7 +365,7 @@ export const listAliasesForDim = createServerFn({ method: "GET" })
       .select(cols)
       .eq(s.aliasFk, data.id)
       .order("texto_origem_norm");
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (rows ?? []) as Array<{
       id: string;
       texto_origem_norm: string;
@@ -422,7 +423,7 @@ export const listCargos = createServerFn({ method: "GET" })
         "id, nome, vinculo_id, grupo_cargo_id, salario_base, salario_real_esperado, jornada, nivel, requisitos, beneficios, adicionais, observacoes, ativo, created_at, updated_at, dim_vinculo(nome), dim_grupo_cargo(nome)",
       )
       .order("nome");
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (data ?? []).map((r: any): CargoCanonico => ({
       id: r.id,
       nome: r.nome,
@@ -471,7 +472,7 @@ export const createCargo = createServerFn({ method: "POST" })
       .insert(normalizeCargoPayload(data))
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return { id: row.id };
   });
 
@@ -485,7 +486,7 @@ export const updateCargo = createServerFn({ method: "POST" })
       .from("dim_cargo")
       .update(normalizeCargoPayload(rest))
       .eq("id", id);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return { ok: true };
   });
 
@@ -511,7 +512,7 @@ export const toggleCargoAtivo = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const { error } = await supabase.from("dim_cargo").update({ ativo: data.ativo }).eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return { ok: true };
   });
 
@@ -525,7 +526,7 @@ export const duplicateCargo = createServerFn({ method: "POST" })
       .select("*")
       .eq("id", data.id)
       .single();
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     const { id, created_at, updated_at, ...rest } = orig as any;
     const { data: row, error: ierr } = await supabase
       .from("dim_cargo")

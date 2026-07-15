@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafe } from "@/lib/server-errors";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type Evolucao = {
@@ -32,7 +33,7 @@ export const listEvolucoes = createServerFn({ method: "GET" })
       .order("matricula", { ascending: true })
       .order("evolucao_data", { ascending: true })
       .range(from, from + pageSize - 1);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     const rows = (data ?? []) as Evolucao[];
     all.push(...rows);
     if (rows.length < pageSize) break;

@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafe } from "@/lib/server-errors";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type Certame = {
@@ -102,7 +103,7 @@ export const listCertames = createServerFn({ method: "GET" })
         .order("tipo")
         .order("cargo")
         .range(from, from + pageSize - 1);
-      if (error) throw new Error(error.message);
+      if (error) throwSafe(error);
       const rows = (data ?? []) as Certame[];
       all.push(...rows);
       if (rows.length < pageSize) break;
@@ -117,7 +118,7 @@ export const listVencimentos = createServerFn({ method: "GET" })
       .from("vencimentos")
       .select("*")
       .limit(2000);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (data ?? []) as Vencimento[];
   });
 
@@ -129,7 +130,7 @@ export const listImportacoes = createServerFn({ method: "GET" })
       .select("*")
       .order("created_at", { ascending: false })
       .limit(200);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (data ?? []) as Importacao[];
   });
 
@@ -141,7 +142,7 @@ export const listAuditoria = createServerFn({ method: "GET" })
       .select("*")
       .order("created_at", { ascending: false })
       .limit(500);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (data ?? []) as Auditoria[];
   });
 
@@ -156,7 +157,7 @@ export const listHistorico = createServerFn({ method: "GET" })
       .limit(500);
     if (data.certame_id) q = q.eq("certame_id", data.certame_id);
     const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (rows ?? []) as HistoricoItem[];
   });
 
@@ -167,7 +168,7 @@ export const listSimulacoes = createServerFn({ method: "GET" })
       .from("lev_simulacoes")
       .select("*")
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return (data ?? []) as Simulacao[];
   });
 
@@ -189,7 +190,7 @@ export const saveSimulacao = createServerFn({ method: "POST" })
       resultado: (data.resultado ?? null) as unknown as Json | null,
       criado_por: context.userId,
     } as never);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return { ok: true };
   });
 
@@ -210,7 +211,7 @@ export const upsertCertame = createServerFn({ method: "POST" })
         .from("lev_certames")
         .update(data.patch as never)
         .eq("id", data.id);
-      if (error) throw new Error(error.message);
+      if (error) throwSafe(error);
       await context.supabase.from("lev_certames_historico").insert({
         certame_id: data.id,
         snapshot: (old ?? {}) as unknown as Json,
@@ -231,7 +232,7 @@ export const upsertCertame = createServerFn({ method: "POST" })
         .insert(data.patch as never)
         .select("id")
         .single();
-      if (error) throw new Error(error.message);
+      if (error) throwSafe(error);
       await context.supabase.from("lev_auditoria").insert({
         usuario_id: context.userId,
         usuario_email: email,
@@ -252,7 +253,7 @@ export const arquivarCertame = createServerFn({ method: "POST" })
       .from("lev_certames")
       .update({ arquivado: data.arquivado })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     await context.supabase.from("lev_auditoria").insert({
       usuario_id: context.userId,
       acao: data.arquivado ? "arquivar" : "reativar",

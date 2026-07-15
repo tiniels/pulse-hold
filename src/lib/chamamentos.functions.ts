@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafe } from "@/lib/server-errors";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import salariosMap from "@/data/salarios.json";
 
@@ -66,7 +67,7 @@ export const listChamamentos = createServerFn({ method: "GET" })
       .order("data_publicacao", { ascending: false, nullsFirst: false })
       .range(page * pageSize, page * pageSize + pageSize - 1);
     const { data: rows, error, count } = await q;
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return { rows: rows ?? [], count: count ?? 0 };
   });
 
@@ -279,6 +280,6 @@ export const updateChamamentoStatus = createServerFn({ method: "POST" })
       .from("chamamentos")
       .update(patch)
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     return { ok: true };
   });

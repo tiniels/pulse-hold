@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { throwSafe } from "@/lib/server-errors";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type Rescisao = {
@@ -31,7 +32,7 @@ export const listRescisoes = createServerFn({ method: "GET" })
       .select("*")
       .order("data_rescisao", { ascending: false })
       .range(from, from + pageSize - 1);
-    if (error) throw new Error(error.message);
+    if (error) throwSafe(error);
     const rows = (data ?? []) as Rescisao[];
     all.push(...rows);
     if (rows.length < pageSize) break;
