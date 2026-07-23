@@ -546,5 +546,6 @@ function CargoDetailSheet({ cargo, onClose }: { cargo: { id: string; nome: strin
         )}
       </SheetContent>
     </Sheet>
+    </TooltipProvider>
   );
 }
