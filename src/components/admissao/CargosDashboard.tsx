@@ -175,14 +175,73 @@ export function CargosDashboard() {
     else { setSortKey(k); setSortDir(k === "nome" || k === "grupo" || k === "vinculo" ? "asc" : "desc"); }
   };
 
-  const download = () => {
-    const blob = new Blob(["\uFEFF" + toCSV(sorted)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `cargos-${fromISO ?? "inicio"}-${toISO ?? "hoje"}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const ultimaAtualizacaoFontes = useMemo(() => {
+    let m: string | null = null;
+    for (const l of data.linhas) {
+      const v = l.ultima_movimentacao;
+      if (v && (!m || v > m)) m = v;
+    }
+    return m;
+  }, [data.linhas]);
+
+  const buildMeta = (): ExportMeta => ({
+    periodo: { fromISO: fromISO ?? null, toISO: toISO ?? null },
+    filtros: {
+      ...(q ? { busca: q } : {}),
+      ...(grupoF !== "_all" ? { grupo: grupoF } : {}),
+      ...(vincF !== "_all" ? { vinculo: vincF } : {}),
+      ...(nivelF !== "_all" ? { nivel: nivelF } : {}),
+      ...(jornadaF !== "_all" ? { jornada: jornadaF } : {}),
+      status: statusF,
+    },
+    extraidoEm: new Date().toISOString(),
+    fonte: "dim_cargo (MDM) + admissoes + rescisoes + dim_quadro_autorizado",
+    metodologia:
+      "Entradas e saídas contabilizadas pelo cargo_id do MDM no período selecionado. " +
+      "Saldo = entradas − saídas. Taxa de saída = saídas / (entradas + saídas). " +
+      "Cobertura = entradas / quadro autorizado. Cargos sem cargo_id são apresentados no bloco 'Não classificados'.",
+    observacoes: [
+      ...(data.totalNaoClassificados > 0
+        ? [`${data.totalNaoClassificados} movimentações sem classificação canônica (grupo/cargo) — revisar em /mdm.`]
+        : []),
+      ...(ultimaAtualizacaoFontes ? [] : ["Nenhuma movimentação registrada no recorte."]),
+    ],
+    totais: {
+      cargos: totalKPI.cargos,
+      entradas: totalKPI.entradas,
+      saidas: totalKPI.saidas,
+      saldo: totalKPI.saldo,
+      naoClassificados: data.totalNaoClassificados,
+    },
+    ultimaAtualizacaoFontes,
+  });
+
+  const callAudit = useServerFn(logAudit);
+  const runExport = async (formato: "csv" | "xlsx" | "pdf") => {
+    const meta = buildMeta();
+    const base = `cargos-${fromISO ?? "inicio"}-${toISO ?? "hoje"}`;
+    try {
+      if (formato === "csv") exportCSV(sorted, meta, `${base}.csv`);
+      else if (formato === "xlsx") await exportXLSX(sorted, meta, `${base}.xlsx`);
+      else await exportPDF(sorted, meta, `${base}.pdf`);
+      toast.success(`Exportação ${formato.toUpperCase()} concluída`);
+    } catch (e: any) {
+      toast.error(`Falha ao gerar ${formato.toUpperCase()}`, { description: e?.message });
+      return;
+    }
+    // Best-effort audit; do not block user
+    void callAudit({
+      data: {
+        acao: `export_${formato}`,
+        entidade: "admissao.cargos_dashboard",
+        filtros: meta.filtros,
+        detalhes: {
+          periodo: meta.periodo,
+          totais: meta.totais,
+          linhas_exportadas: sorted.length,
+        },
+      },
+    }).catch(() => {});
   };
 
   return (
