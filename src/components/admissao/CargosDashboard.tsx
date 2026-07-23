@@ -27,8 +27,16 @@ import {
 } from "@/components/ui/tooltip";
 import {
   Search, Download, ArrowUpDown, TrendingUp, TrendingDown, Circle,
-  Briefcase, ChevronRight, Info,
+  Briefcase, ChevronRight, Info, AlertTriangle, AlertOctagon, CheckCircle2,
+  PauseCircle, MinusCircle, FileSpreadsheet, FileText, FileDown, Clock,
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { exportCSV, exportPDF, exportXLSX, type ExportMeta } from "@/lib/admissao-export";
+import { logAudit } from "@/lib/audit.functions";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
   CartesianGrid, BarChart, Bar, Legend,
@@ -52,40 +60,23 @@ function saldoTone(s: number): string {
   if (s < 0) return "text-rose-600";
   return "text-muted-foreground";
 }
-function semaforo(l: CargoLinha): { label: string; className: string; hint: string } {
-  if (!l.ativo) return { label: "Inativo", className: "bg-slate-200 text-slate-600", hint: "Cargo marcado como inativo no MDM." };
-  if (l.sem_movimento) return { label: "Sem mov. 12m", className: "bg-slate-100 text-slate-700 border", hint: "Nenhuma admissão ou desligamento nos últimos 12 meses." };
-  if (l.cobertura_pct != null && l.cobertura_pct < 50) return { label: "Cobertura crítica", className: "bg-rose-100 text-rose-700 border border-rose-300", hint: "Entradas no período < 50% do quadro autorizado." };
-  if (l.taxa_saida_pct != null && l.taxa_saida_pct > 60) return { label: "Alta rotatividade", className: "bg-amber-100 text-amber-800 border border-amber-300", hint: "Mais de 60% das movimentações no período são saídas." };
-  if (l.saldo < 0) return { label: "Déficit", className: "bg-rose-50 text-rose-700 border border-rose-200", hint: "Saídas superam entradas no período." };
-  if (l.saldo > 0) return { label: "Superávit", className: "bg-emerald-50 text-emerald-700 border border-emerald-200", hint: "Entradas superam saídas no período." };
-  return { label: "Estável", className: "bg-slate-50 text-slate-600 border", hint: "Movimentação equilibrada no período." };
+type SemStatus = {
+  label: string; className: string; hint: string;
+  Icon: React.ComponentType<{ className?: string }>;
+};
+function semaforo(l: CargoLinha): SemStatus {
+  if (!l.ativo) return { label: "Inativo", className: "bg-slate-200 text-slate-700 border border-slate-300", hint: "Cargo marcado como inativo no MDM.", Icon: PauseCircle };
+  if (l.sem_movimento) return { label: "Sem mov. 12m", className: "bg-slate-100 text-slate-700 border border-slate-300", hint: "Nenhuma admissão ou desligamento nos últimos 12 meses.", Icon: MinusCircle };
+  if (l.cobertura_pct != null && l.cobertura_pct < 50) return { label: "Cobertura crítica", className: "bg-rose-100 text-rose-800 border border-rose-300", hint: "Entradas no período < 50% do quadro autorizado.", Icon: AlertOctagon };
+  if (l.taxa_saida_pct != null && l.taxa_saida_pct > 60) return { label: "Alta rotatividade", className: "bg-amber-100 text-amber-900 border border-amber-300", hint: "Mais de 60% das movimentações no período são saídas.", Icon: AlertTriangle };
+  if (l.saldo < 0) return { label: "Déficit", className: "bg-rose-50 text-rose-800 border border-rose-200", hint: "Saídas superam entradas no período.", Icon: TrendingDown };
+  if (l.saldo > 0) return { label: "Superávit", className: "bg-emerald-50 text-emerald-800 border border-emerald-200", hint: "Entradas superam saídas no período.", Icon: TrendingUp };
+  return { label: "Estável", className: "bg-slate-50 text-slate-700 border border-slate-200", hint: "Movimentação equilibrada no período.", Icon: CheckCircle2 };
 }
 
-function toCSV(rows: CargoLinha[]): string {
-  const head = [
-    "cargo", "grupo", "vinculo", "nivel", "jornada", "ativo",
-    "entradas", "saidas", "saldo", "taxa_saida_pct", "dias_medios_casa",
-    "ultima_admissao", "ultima_rescisao", "quadro_autorizado", "cobertura_pct", "salario_base",
-  ];
-  const esc = (v: unknown) => {
-    const s = v == null ? "" : String(v);
-    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const lines = [head.join(";")];
-  for (const l of rows) {
-    lines.push([
-      l.nome, l.grupo_nome ?? "", l.vinculo_nome ?? "", l.nivel ?? "", l.jornada ?? "", l.ativo ? "sim" : "não",
-      l.entradas, l.saidas, l.saldo,
-      l.taxa_saida_pct?.toFixed(1) ?? "",
-      l.dias_medios_casa ?? "",
-      l.ultima_admissao ?? "", l.ultima_rescisao ?? "",
-      l.quadro_autorizado ?? "",
-      l.cobertura_pct?.toFixed(1) ?? "",
-      l.salario_base ?? "",
-    ].map(esc).join(";"));
-  }
-  return lines.join("\n");
+function fmtDateTimeBR(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
 export function CargosDashboard() {
