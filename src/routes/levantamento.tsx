@@ -589,12 +589,14 @@ function Kpi({
   icon,
   tone,
   onClick,
+  help,
 }: {
   title: string;
   value: string | number;
   icon: React.ReactNode;
   tone?: "ok" | "warn";
   onClick?: () => void;
+  help?: string;
 }) {
   const toneClass =
     tone === "ok"
@@ -609,8 +611,25 @@ function Kpi({
     >
       <CardContent className="flex items-center justify-between p-3">
         <div>
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
             {title}
+            {help && (
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-muted-foreground/60 hover:text-muted-foreground"
+                    aria-label={`Sobre ${title}`}
+                  >
+                    <Info className="h-3 w-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-xs normal-case tracking-normal">
+                  {help}
+                </TooltipContent>
+              </UITooltip>
+            )}
           </p>
           <p className="text-lg font-semibold">{value}</p>
         </div>
