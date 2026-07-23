@@ -345,8 +345,19 @@ export function CargosDashboard() {
                 <TableBody>
                   {sorted.map((l) => {
                     const sem = semaforo(l);
+                    const open = () => setOpenCargo({ id: l.cargo_id, nome: l.nome });
                     return (
-                      <TableRow key={l.cargo_id} className="cursor-pointer hover:bg-muted/50" onClick={() => setOpenCargo({ id: l.cargo_id, nome: l.nome })}>
+                      <TableRow
+                        key={l.cargo_id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Abrir detalhes de ${l.nome}. Status: ${sem.label}. Entradas ${l.entradas}, saídas ${l.saidas}, saldo ${l.saldo}.`}
+                        className="cursor-pointer outline-none hover:bg-muted/50 focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-primary/60"
+                        onClick={open}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+                        }}
+                      >
                         <TableCell className="max-w-[280px]">
                           <div className="font-medium leading-tight">{l.nome}</div>
                           <div className="text-[10px] text-muted-foreground">
@@ -360,7 +371,10 @@ export function CargosDashboard() {
                         <TableCell>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] ${sem.className}`}>{sem.label}</span>
+                              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${sem.className}`}>
+                                <sem.Icon className="h-3 w-3" aria-hidden />
+                                {sem.label}
+                              </span>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs text-xs">{sem.hint}</TooltipContent>
                           </Tooltip>
