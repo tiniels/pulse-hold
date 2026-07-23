@@ -21,15 +21,41 @@ import {
 } from "@/components/ui/select";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip as RTooltip, Legend, LineChart, Line,
+  Tooltip as RTooltip, Legend, LineChart, Line, LabelList,
 } from "recharts";
 import {
   ArrowLeft, Building2, Users, UserPlus, UserMinus,
   TrendingUp, TrendingDown, Scale, Activity, Award, AlertTriangle,
+  Info, X, Eraser,
 } from "lucide-react";
 import { HierarquiaMovimentacao } from "@/components/painel/HierarquiaMovimentacao";
 import { CoberturaMDMCard } from "@/components/painel/CoberturaMDMCard";
 import { AuditoriaDialog } from "@/components/painel/AuditoriaDialog";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+
+/* ================== KPI metadata ================== */
+
+type KpiKey =
+  | "entradas" | "saidas" | "saldo"
+  | "Exoneração" | "Aposentadoria" | "Vacância" | "Rescisão" | "Falecimento";
+
+const KPI_HELP: Record<string, string> = {
+  "Total admitidos": "Servidores que ingressaram no período filtrado (admissoes com data_efetiva no intervalo).",
+  "Total desligados": "Servidores que deixaram o quadro no período (rescisões, exonerações, aposentadorias, vacâncias e falecimentos).",
+  "Saldo líquido": "Admitidos − Desligados. Verde = crescimento; vermelho = déficit.",
+  "Exonerações": "Desligamentos por ato administrativo (motivo canônico = Exoneração).",
+  "Aposentadorias": "Aposentadorias no período (motivo canônico = Aposentadoria).",
+  "Vacâncias": "Vacâncias declaradas (motivo canônico = Vacância).",
+  "Rescisões": "Rescisões e demissões (motivo canônico = Rescisão/Demissão).",
+  "Falecimentos": "Desligamentos por falecimento (motivo canônico = Falecimento).",
+};
 
 /* ================== route ================== */
 
@@ -93,6 +119,7 @@ function AdmissaoPage() {
   const [motivoFilter, setMotivoFilter] = useState<string>("");
 
   const [audit, setAudit] = useState<null | { nivel: "secretaria" | "grupo_cargo"; id: string; label: string }>(null);
+  const [drill, setDrill] = useState<null | { title: string; help?: string; rows: Array<EntradaCanonica | SaidaCanonica>; kind: "entrada" | "saida" }>(null);
 
   const applyFilters = <T extends EntradaCanonica>(rows: T[], isSaida: boolean): T[] => {
     return rows.filter((r) => {
@@ -194,15 +221,23 @@ function AdmissaoPage() {
   };
 
   const kpiCards = [
-    { title: "Total admitidos", value: kpi.entradas, icon: <UserPlus />, tone: "text-emerald-600" },
-    { title: "Total desligados", value: kpi.saidas, icon: <UserMinus />, tone: "text-rose-600" },
+    { title: "Total admitidos", value: kpi.entradas, icon: <UserPlus />, tone: "text-emerald-600", onClick: () => setDrill({ title: "Total admitidos", help: KPI_HELP["Total admitidos"], rows: entradas, kind: "entrada" }) },
+    { title: "Total desligados", value: kpi.saidas, icon: <UserMinus />, tone: "text-rose-600", onClick: () => setDrill({ title: "Total desligados", help: KPI_HELP["Total desligados"], rows: saidas, kind: "saida" }) },
     { title: "Saldo líquido", value: kpi.saldo, icon: <Scale />, tone: kpi.saldo >= 0 ? "text-emerald-600" : "text-rose-600" },
-    { title: "Exonerações", value: kpi.exon, icon: <TrendingDown />, tone: "text-rose-500" },
-    { title: "Aposentadorias", value: kpi.apos, icon: <Award />, tone: "text-amber-600" },
-    { title: "Vacâncias", value: kpi.vac, icon: <AlertTriangle />, tone: "text-orange-600" },
-    { title: "Rescisões", value: kpi.resc, icon: <UserMinus />, tone: "text-rose-500" },
-    { title: "Falecimentos", value: kpi.fale, icon: <Activity />, tone: "text-slate-500" },
-  ];
+    { title: "Exonerações", value: kpi.exon, icon: <TrendingDown />, tone: "text-rose-500", onClick: () => setDrill({ title: "Exonerações", help: KPI_HELP["Exonerações"], rows: saidas.filter((s) => s.saida_categoria === "Exoneração"), kind: "saida" }) },
+    { title: "Aposentadorias", value: kpi.apos, icon: <Award />, tone: "text-amber-600", onClick: () => setDrill({ title: "Aposentadorias", help: KPI_HELP["Aposentadorias"], rows: saidas.filter((s) => s.saida_categoria === "Aposentadoria"), kind: "saida" }) },
+    { title: "Vacâncias", value: kpi.vac, icon: <AlertTriangle />, tone: "text-orange-600", onClick: () => setDrill({ title: "Vacâncias", help: KPI_HELP["Vacâncias"], rows: saidas.filter((s) => s.saida_categoria === "Vacância"), kind: "saida" }) },
+    { title: "Rescisões", value: kpi.resc, icon: <UserMinus />, tone: "text-rose-500", onClick: () => setDrill({ title: "Rescisões", help: KPI_HELP["Rescisões"], rows: saidas.filter((s) => s.saida_categoria === "Rescisão" || s.saida_categoria === "Demissão"), kind: "saida" }) },
+    { title: "Falecimentos", value: kpi.fale, icon: <Activity />, tone: "text-slate-500", onClick: () => setDrill({ title: "Falecimentos", help: KPI_HELP["Falecimentos"], rows: saidas.filter((s) => s.saida_categoria === "Falecimento"), kind: "saida" }) },
+  ] as const;
+
+  const anyFilterActive = !!(secretariaFilter || grupoCargoFilter || especialidadeFilter || vinculoFilter || motivoFilter);
+  const clearFilters = () => {
+    setSecretariaFilter(""); setGrupoCargoFilter(""); setEspecialidadeFilter("");
+    setVinculoFilter(""); setMotivoFilter("");
+  };
+
+  const secretariasEmDeficit = rankSecretarias.filter((r) => r.saldo <= -5).slice(0, 5);
 
   const especialidadesDoGrupo = grupoCargoFilter
     ? dims.especialidades.filter((e) => e.parent_id === grupoCargoFilter)
@@ -276,22 +311,66 @@ function AdmissaoPage() {
               options={dims.motivos}
               width="w-44"
             />
+            {anyFilterActive && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="ml-1 text-xs">
+                <Eraser className="mr-1 h-3.5 w-3.5" /> Limpar filtros
+              </Button>
+            )}
           </CardContent>
         </Card>
 
+        {secretariasEmDeficit.length > 0 && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Alerta gerencial: secretarias em déficit acentuado</AlertTitle>
+            <AlertDescription>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {secretariasEmDeficit.map((s) => (
+                  <Badge key={s.id} variant="destructive" className="cursor-pointer" onClick={() => setSecretariaFilter(s.id)}>
+                    {s.nome} · saldo {s.saldo}
+                  </Badge>
+                ))}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
-          {kpiCards.map((k) => (
-            <Card key={k.title}>
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{k.title}</p>
-                  <span className={k.tone}>{k.icon}</span>
-                </div>
-                <p className={`mt-1 text-xl font-semibold tabular-nums ${k.tone}`}>{k.value.toLocaleString("pt-BR")}</p>
-              </CardContent>
-            </Card>
-          ))}
+          <TooltipProvider delayDuration={200}>
+            {kpiCards.map((k) => {
+              const help = KPI_HELP[k.title];
+              const clickable = "onClick" in k && typeof k.onClick === "function";
+              return (
+                <Card
+                  key={k.title}
+                  className={clickable ? "cursor-pointer transition-shadow hover:shadow-md" : ""}
+                  onClick={clickable ? k.onClick : undefined}
+                  role={clickable ? "button" : undefined}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{k.title}</p>
+                        {help && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" onClick={(e) => e.stopPropagation()} className="text-muted-foreground/60 hover:text-muted-foreground">
+                                <Info className="h-3 w-3" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs text-xs">{help}</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                      <span className={k.tone}>{k.icon}</span>
+                    </div>
+                    <p className={`mt-1 text-xl font-semibold tabular-nums ${k.tone}`}>{k.value.toLocaleString("pt-BR")}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </TooltipProvider>
         </div>
 
         {/* Hierarchy + Cobertura */}
@@ -356,7 +435,9 @@ function AdmissaoPage() {
                   <XAxis type="number" fontSize={10} />
                   <YAxis type="category" dataKey="name" fontSize={10} width={120} />
                   <RTooltip />
-                  <Bar dataKey="value" fill="hsl(0 84% 60%)" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="value" fill="hsl(0 84% 60%)" radius={[0, 4, 4, 0]}>
+                    <LabelList dataKey="value" position="right" style={{ fontSize: 10 }} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -377,7 +458,9 @@ function AdmissaoPage() {
                   <XAxis type="number" fontSize={10} />
                   <YAxis type="category" dataKey="name" fontSize={10} width={120} />
                   <RTooltip />
-                  <Bar dataKey="value" fill="hsl(142 71% 45%)" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="value" fill="hsl(142 71% 45%)" radius={[0, 4, 4, 0]}>
+                    <LabelList dataKey="value" position="right" style={{ fontSize: 10 }} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -394,6 +477,43 @@ function AdmissaoPage() {
         id={audit?.id ?? null}
         labelCanonico={audit?.label ?? ""}
       />
+
+      <Sheet open={!!drill} onOpenChange={(o) => !o && setDrill(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              {drill?.title}
+              <Badge variant="secondary">{drill?.rows.length ?? 0}</Badge>
+            </SheetTitle>
+            {drill?.help && <SheetDescription className="text-xs">{drill.help}</SheetDescription>}
+          </SheetHeader>
+          <div className="mt-4 space-y-2">
+            {(drill?.rows ?? []).slice(0, 200).map((r, i) => {
+              const secNome = dims.secretarias.find((s) => s.id === r.secretaria_id)?.nome ?? "—";
+              const grupoNome = dims.grupos_cargo.find((g) => g.id === r.grupo_cargo_id)?.nome ?? "—";
+              const motivo = drill?.kind === "saida" ? (r as SaidaCanonica).saida_categoria : null;
+              return (
+                <div key={i} className="rounded-md border p-2 text-xs">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-medium">{(r as { nome?: string }).nome ?? "—"}</p>
+                    <span className="text-muted-foreground">{r.data ?? "—"}</span>
+                  </div>
+                  <p className="text-muted-foreground">
+                    {grupoNome} · {secNome}
+                    {motivo ? ` · ${motivo}` : ""}
+                  </p>
+                </div>
+              );
+            })}
+            {(drill?.rows.length ?? 0) > 200 && (
+              <p className="pt-2 text-center text-xs text-muted-foreground">Mostrando 200 de {drill?.rows.length}. Refine os filtros para ver todos.</p>
+            )}
+            {(drill?.rows.length ?? 0) === 0 && (
+              <p className="py-8 text-center text-xs text-muted-foreground">Nenhum registro no período/filtros atuais.</p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
