@@ -372,22 +372,23 @@ function CargoDetailSheet({ cargo, onClose }: { cargo: { id: string; nome: strin
   });
 
   return (
-    <Sheet open={enabled} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-primary" />
-            {cargo?.nome}
-          </SheetTitle>
-          <SheetDescription className="text-xs">
-            Análise cargo-first · movimentação, distribuição por secretaria, timeline e certames vinculados no MDM.
-          </SheetDescription>
-        </SheetHeader>
+    <TooltipProvider delayDuration={200}>
+      <Sheet open={enabled} onOpenChange={(o) => !o && onClose()}>
+        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-primary" />
+              {cargo?.nome}
+            </SheetTitle>
+            <SheetDescription className="text-xs">
+              Análise cargo-first · movimentação, distribuição por secretaria, timeline e certames vinculados no MDM.
+            </SheetDescription>
+          </SheetHeader>
 
-        {isLoading || !data ? (
-          <div className="py-16 text-center text-xs text-muted-foreground">Carregando detalhamento…</div>
-        ) : (
-          <div className="mt-4 space-y-4">
+          {isLoading || !data ? (
+            <div className="py-16 text-center text-xs text-muted-foreground">Carregando detalhamento…</div>
+          ) : (
+            <div className="mt-4 space-y-4">
             {/* Ações */}
             <div className="flex flex-wrap gap-2">
               {cargo && cargo.id !== CARGO_UNKNOWN_ID && (
