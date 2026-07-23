@@ -31,6 +31,8 @@ import {
 import { HierarquiaMovimentacao } from "@/components/painel/HierarquiaMovimentacao";
 import { CoberturaMDMCard } from "@/components/painel/CoberturaMDMCard";
 import { AuditoriaDialog } from "@/components/painel/AuditoriaDialog";
+import { CargosDashboard } from "@/components/admissao/CargosDashboard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
@@ -270,11 +272,30 @@ function AdmissaoPage() {
       </header>
 
       <div className="mx-auto max-w-7xl space-y-4 p-4">
-        {/* Filters */}
+        {/* Global period bar (shared entre abas) */}
         <Card>
           <CardContent className="flex flex-wrap items-center gap-2 p-3">
             <GlobalPeriodFilter />
-            <div className="mx-1 h-6 w-px bg-border" />
+            <span className="ml-auto text-[11px] text-muted-foreground">
+              Fonte única: <strong>dim_cargo</strong> · Movimentações vinculadas por FK canônica (cargo_id, secretaria_id, motivo_id).
+            </span>
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="cargos" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="cargos">Grade de cargos (fonte única)</TabsTrigger>
+            <TabsTrigger value="hierarquia">Visão hierárquica canônica</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="cargos" className="space-y-4">
+            <CargosDashboard />
+          </TabsContent>
+
+          <TabsContent value="hierarquia" className="space-y-4">
+        {/* Filters */}
+        <Card>
+          <CardContent className="flex flex-wrap items-center gap-2 p-3">
             <CanonicalSelect
               value={secretariaFilter}
               onChange={setSecretariaFilter}
@@ -468,6 +489,8 @@ function AdmissaoPage() {
         )}
 
         <PeriodComparator compute={compareMetrics} />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <AuditoriaDialog

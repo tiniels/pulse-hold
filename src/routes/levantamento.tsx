@@ -110,6 +110,9 @@ import {
 import { Users } from "lucide-react";
 
 export const Route = createFileRoute("/levantamento")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    cargo_id: typeof search.cargo_id === "string" ? search.cargo_id : undefined,
+  }),
   head: () => ({
     meta: [
       {
