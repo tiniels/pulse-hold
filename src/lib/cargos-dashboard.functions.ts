@@ -350,11 +350,20 @@ export const getCargoDetalhe = createServerFn({ method: "POST" })
     const supabase = context.supabase as any;
     const isUnknown = data.cargo_id === CARGO_UNKNOWN_ID;
 
+    // A UI passa o grupo_cargo_id como "cargo_id" (a granularidade real
+    // dos dados). Buscamos o nome no dim_grupo_cargo e a lista de cargos
+    // canônicos filhos para vincular certames.
     let cargoNome = "Não classificados";
+    let cargoIdsDoGrupo: string[] = [];
     if (!isUnknown) {
-      const { data: c, error } = await supabase.from("dim_cargo").select("nome").eq("id", data.cargo_id).maybeSingle();
-      if (error) throwSafe(error);
-      cargoNome = c?.nome ?? "—";
+      const [gRes, cRes] = await Promise.all([
+        supabase.from("dim_grupo_cargo").select("nome").eq("id", data.cargo_id).maybeSingle(),
+        supabase.from("dim_cargo").select("id").eq("grupo_cargo_id", data.cargo_id),
+      ]);
+      if (gRes.error) throwSafe(gRes.error);
+      if (cRes.error) throwSafe(cRes.error);
+      cargoNome = gRes.data?.nome ?? "—";
+      cargoIdsDoGrupo = (cRes.data ?? []).map((r: any) => r.id);
     }
 
     const [secDim, motDim] = await Promise.all([
@@ -368,8 +377,8 @@ export const getCargoDetalhe = createServerFn({ method: "POST" })
 
     const admQ = supabase.from("admissoes").select("nome,prontuario,data_efetiva,secretaria_id").not("data_efetiva", "is", null);
     const resQ = supabase.from("rescisoes").select("nome,matricula,data_rescisao,secretaria_id,motivo_id").not("data_rescisao", "is", null);
-    const adm = isUnknown ? admQ.is("cargo_id", null) : admQ.eq("cargo_id", data.cargo_id);
-    const res = isUnknown ? resQ.is("cargo_id", null) : resQ.eq("cargo_id", data.cargo_id);
+    const adm = isUnknown ? admQ.is("grupo_cargo_id", null) : admQ.eq("grupo_cargo_id", data.cargo_id);
+    const res = isUnknown ? resQ.is("grupo_cargo_id", null) : resQ.eq("grupo_cargo_id", data.cargo_id);
     if (data.fromISO) { adm.gte("data_efetiva", data.fromISO); res.gte("data_rescisao", data.fromISO); }
     if (data.toISO) { adm.lte("data_efetiva", data.toISO); res.lte("data_rescisao", data.toISO); }
     const [admRes, resRes] = await Promise.all([adm.order("data_efetiva", { ascending: false }), res.order("data_rescisao", { ascending: false })]);
@@ -412,11 +421,11 @@ export const getCargoDetalhe = createServerFn({ method: "POST" })
 
     // certames vinculados
     let certames: CargoDetalhe["certames"] = [];
-    if (!isUnknown) {
+    if (!isUnknown && cargoIdsDoGrupo.length > 0) {
       const { data: cs, error: cErr } = await supabase
         .from("lev_certames")
         .select("id,tipo,numero,ano,situacao,qtd_aprovados,total_disponivel,vencimento")
-        .eq("cargo_id", data.cargo_id)
+        .in("cargo_id", cargoIdsDoGrupo)
         .order("vencimento", { ascending: true, nullsFirst: false })
         .limit(50);
       if (cErr) throwSafe(cErr);
