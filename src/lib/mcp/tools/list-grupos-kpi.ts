@@ -35,7 +35,8 @@ export default defineTool({
       .order("admissoes", { ascending: false })
       .limit(limit ?? 50);
     if (error) {
-      return { content: [{ type: "text", text: error.message }], isError: true };
+      console.error("[mcp:list_grupos_kpi]", error);
+      return { content: [{ type: "text", text: "Não foi possível concluir a operação." }], isError: true };
     }
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],

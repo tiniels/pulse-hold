@@ -176,7 +176,7 @@ export const listAliases = createServerFn({ method: "GET" })
 
     // fetch dim labels
     const { data: dims, error: derr } = await supabase.from(cfg.dim).select(`id, ${cfg.dimNome}`);
-    if (derr) throw new Error(derr.message);
+    if (derr) throwSafe(derr);
     const map = new Map<string, string>();
     (dims ?? []).forEach((d: any) => map.set(d.id, d[cfg.dimNome]));
 
@@ -241,7 +241,7 @@ export const listDimensoes = createServerFn({ method: "GET" })
       .from(s.aliasTable)
       .select(s.aliasFk)
       .not(s.aliasFk, "is", null);
-    if (aerr) throw new Error(aerr.message);
+    if (aerr) throwSafe(aerr);
     const counts = new Map<string, number>();
     (aliases ?? []).forEach((a: any) => {
       const k = a[s.aliasFk];
@@ -347,7 +347,7 @@ export const duplicateDimensao = createServerFn({ method: "POST" })
     const payload: Record<string, unknown> = { ...orig };
     payload[s.nameField] = `${orig[s.nameField]} (cópia)`;
     const { data: row, error: ierr } = await supabase.from(s.table).insert(payload).select("id").single();
-    if (ierr) throw new Error(ierr.message);
+    if (ierr) throwSafe(ierr);
     return { id: row.id };
   });
 

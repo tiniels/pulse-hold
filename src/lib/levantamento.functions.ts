@@ -339,7 +339,7 @@ export const commitImport = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (iErr) throw new Error(iErr.message);
+    if (iErr) throwSafe(iErr);
     const importacao_id = importacaoRow!.id as string;
 
     let novos = 0,

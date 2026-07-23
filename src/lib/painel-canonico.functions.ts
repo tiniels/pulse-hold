@@ -109,7 +109,7 @@ export const listMovimentacoesCanonicas = createServerFn({ method: "POST" })
 
     // Fetch motivos map first (small dim)
     const { data: motivos, error: mErr } = await supabase.from("dim_motivo").select("id,nome");
-    if (mErr) throw new Error(mErr.message);
+    if (mErr) throwSafe(mErr);
     const motivoById = new Map<string, string>();
     (motivos ?? []).forEach((m: any) => motivoById.set(m.id, m.nome));
 
@@ -348,7 +348,7 @@ export const listAuditoriaAgregacao = createServerFn({ method: "POST" })
       .select(`id, ${cfg.dimNome}`)
       .eq("id", data.id)
       .single();
-    if (dErr) throw new Error(dErr.message);
+    if (dErr) throwSafe(dErr);
 
     const aliasCols = ["texto_origem_norm", "revisado", cfg.hasTextoOrigem ? "texto_origem" : null]
       .filter(Boolean)
@@ -358,7 +358,7 @@ export const listAuditoriaAgregacao = createServerFn({ method: "POST" })
       .select(aliasCols)
       .eq(cfg.fk, data.id)
       .order("texto_origem_norm");
-    if (aErr) throw new Error(aErr.message);
+    if (aErr) throwSafe(aErr);
 
     let classificados = 0;
     for (const c of cfg.countTables) {

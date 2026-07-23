@@ -22,7 +22,7 @@ export const obterFila = createServerFn({ method: "GET" })
       .from("cargos_fila")
       .select("id, nome_original, secao, concurso:concursos(id, tipo, numero, data_realizacao, data_homologacao, prorrogado_ate, sheet_origem)")
       .eq("nome_normalizado", norm);
-    if (cgErr) throw new Error(cgErr.message);
+    if (cgErr) throwSafe(cgErr);
     if (!cargos || cargos.length === 0) {
       return { fila: [], convocados: [], outros: [], cargoNome: data.cargoNome };
     }
@@ -35,7 +35,7 @@ export const obterFila = createServerFn({ method: "GET" })
       .in("cargo_fila_id", cargoIds);
     if (data.lista && data.lista !== "TODAS") q = q.eq("lista_tipo", data.lista);
     const { data: cands, error: cdErr } = await q;
-    if (cdErr) throw new Error(cdErr.message);
+    if (cdErr) throwSafe(cdErr);
 
     const enriched = (cands ?? []).map((c) => {
       const cg: any = cargoMap.get(c.cargo_fila_id);
@@ -92,13 +92,13 @@ export const convocarCandidato = createServerFn({ method: "POST" })
       .select("id, status")
       .eq("id", data.candidatoId)
       .maybeSingle();
-    if (pErr) throw new Error(pErr.message);
+    if (pErr) throwSafe(pErr);
     if (!prev) throw new Error("Candidato não encontrado");
     const { error: uErr } = await supabaseAdmin
       .from("candidatos")
       .update({ status: "CONVOCADO", data_convocacao: new Date().toISOString().slice(0, 10) })
       .eq("id", data.candidatoId);
-    if (uErr) throw new Error(uErr.message);
+    if (uErr) throwSafe(uErr);
     await supabaseAdmin.from("convocacoes_log").insert({
       candidato_id: data.candidatoId,
       acao: "CONVOCAR",
