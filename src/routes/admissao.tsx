@@ -26,7 +26,7 @@ import {
 import {
   ArrowLeft, Building2, Users, UserPlus, UserMinus,
   TrendingUp, TrendingDown, Scale, Activity, Award, AlertTriangle,
-  Info, X, Eraser,
+  Info, Eraser,
 } from "lucide-react";
 import { HierarquiaMovimentacao } from "@/components/painel/HierarquiaMovimentacao";
 import { CoberturaMDMCard } from "@/components/painel/CoberturaMDMCard";
