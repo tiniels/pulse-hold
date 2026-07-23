@@ -275,10 +275,39 @@ export function CargosDashboard() {
             </SelectContent>
           </Select>
           <div className="ml-auto flex items-center gap-2">
+            <Badge variant="outline" className="gap-1 text-[10px] font-normal" title="Data da movimentação mais recente considerada no recorte">
+              <Clock className="h-3 w-3" aria-hidden />
+              <span className="sr-only">Última atualização das fontes: </span>
+              {fmtDateTimeBR(ultimaAtualizacaoFontes)}
+            </Badge>
             <Badge variant="secondary" className="text-xs">
               {data.totalNaoClassificados > 0 ? `${data.totalNaoClassificados} movimentações não classificadas` : "100% classificado"}
             </Badge>
-            <Button variant="outline" size="sm" onClick={download}><Download className="mr-1 h-3.5 w-3.5" /> CSV</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" aria-label="Exportar grade de cargos">
+                  <Download className="mr-1 h-3.5 w-3.5" /> Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Formato do relatório
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => runExport("xlsx")}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" aria-hidden />
+                  Excel estruturado (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => runExport("pdf")}>
+                  <FileText className="mr-2 h-4 w-4 text-rose-600" aria-hidden />
+                  PDF executivo (.pdf)
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => runExport("csv")}>
+                  <FileDown className="mr-2 h-4 w-4 text-slate-600" aria-hidden />
+                  CSV bruto (.csv)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardContent>
       </Card>
