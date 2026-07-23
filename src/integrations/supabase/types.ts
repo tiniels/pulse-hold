@@ -823,6 +823,67 @@ export type Database = {
           },
         ]
       }
+      dim_quadro_autorizado: {
+        Row: {
+          cargo_id: string
+          created_at: string
+          fonte: string | null
+          id: string
+          observacoes: string | null
+          quantidade_autorizada: number
+          secretaria_id: string | null
+          updated_at: string
+          vigencia_fim: string | null
+          vigencia_inicio: string
+        }
+        Insert: {
+          cargo_id: string
+          created_at?: string
+          fonte?: string | null
+          id?: string
+          observacoes?: string | null
+          quantidade_autorizada: number
+          secretaria_id?: string | null
+          updated_at?: string
+          vigencia_fim?: string | null
+          vigencia_inicio: string
+        }
+        Update: {
+          cargo_id?: string
+          created_at?: string
+          fonte?: string | null
+          id?: string
+          observacoes?: string | null
+          quantidade_autorizada?: number
+          secretaria_id?: string | null
+          updated_at?: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dim_quadro_autorizado_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_quadro_autorizado_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "dim_secretaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dim_quadro_autorizado_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_secretaria"
+            referencedColumns: ["secretaria_id"]
+          },
+        ]
+      }
       dim_secretaria: {
         Row: {
           ativo: boolean
@@ -1259,6 +1320,7 @@ export type Database = {
           ano: number | null
           arquivado: boolean
           cargo: string
+          cargo_id: string | null
           created_at: string
           data_homologacao: string | null
           desistencias_renuncias: number | null
@@ -1278,6 +1340,7 @@ export type Database = {
           regularizar: string | null
           row_hash: string | null
           secretaria: string | null
+          secretaria_id: string | null
           situacao: string | null
           tipo: string
           total_disponivel: number | null
@@ -1288,6 +1351,7 @@ export type Database = {
           ano?: number | null
           arquivado?: boolean
           cargo: string
+          cargo_id?: string | null
           created_at?: string
           data_homologacao?: string | null
           desistencias_renuncias?: number | null
@@ -1307,6 +1371,7 @@ export type Database = {
           regularizar?: string | null
           row_hash?: string | null
           secretaria?: string | null
+          secretaria_id?: string | null
           situacao?: string | null
           tipo: string
           total_disponivel?: number | null
@@ -1317,6 +1382,7 @@ export type Database = {
           ano?: number | null
           arquivado?: boolean
           cargo?: string
+          cargo_id?: string | null
           created_at?: string
           data_homologacao?: string | null
           desistencias_renuncias?: number | null
@@ -1336,13 +1402,36 @@ export type Database = {
           regularizar?: string | null
           row_hash?: string | null
           secretaria?: string | null
+          secretaria_id?: string | null
           situacao?: string | null
           tipo?: string
           total_disponivel?: number | null
           updated_at?: string
           vencimento?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lev_certames_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "dim_cargo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lev_certames_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "dim_secretaria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lev_certames_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "vw_kpi_por_secretaria"
+            referencedColumns: ["secretaria_id"]
+          },
+        ]
       }
       lev_certames_historico: {
         Row: {
