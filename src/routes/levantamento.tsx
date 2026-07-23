@@ -93,8 +93,16 @@ import {
   Coins,
   Home,
   BarChart3,
+  Plus,
+  Info,
 } from "lucide-react";
 import { LoginGate } from "@/components/rescisoes/LoginGate";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   getCertameCargosDetalhe,
   getFilaCargoDetalhe,
@@ -170,6 +178,8 @@ function LevantamentoInner() {
   }>(null);
   const [certameSel, setCertameSel] = useState<Certame | null>(null);
   const [cargoFilaSel, setCargoFilaSel] = useState<string | null>(null);
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [tab, setTab] = useState("dashboard");
   const { data: certames = [] } = useQuery({
     queryKey: ["lev_certames"],
     queryFn: () => listCertames(),
@@ -201,6 +211,13 @@ function LevantamentoInner() {
     qc.invalidateQueries({ queryKey: ["lev_auditoria"] });
     qc.invalidateQueries({ queryKey: ["lev_historico"] });
   };
+
+  const ultimaAtualizacao = useMemo(() => {
+    const iso = importacoes[0]?.created_at ?? null;
+    if (!iso) return null;
+    const d = new Date(iso);
+    return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  }, [importacoes]);
 
   // Custo médio por cargo (a partir de vencimentos existentes — MVP heurístico)
   const custoMedio = useMemo(() => {
@@ -263,14 +280,20 @@ function LevantamentoInner() {
             </div>
             <div>
               <h1 className="text-base font-semibold leading-tight">
-                Sistema Integrado de Planejamento de Certames
+                Visão Geral de Certames
               </h1>
               <p className="text-xs text-muted-foreground">
-                Gestão de Pessoal · CAB · v1.0
+                Sistema Integrado de Planejamento · CAB
+                {ultimaAtualizacao && (
+                  <> · Última atualização: <span className="font-medium">{ultimaAtualizacao}</span></>
+                )}
               </p>
             </div>
           </div>
           <nav className="flex items-center gap-2">
+            <Button size="sm" onClick={() => setNovoOpen(true)}>
+              <Plus className="mr-1 h-4 w-4" /> Novo Certame
+            </Button>
             <Link to="/">
               <Button variant="ghost" size="sm">
                 <Home className="mr-1 h-4 w-4" />
@@ -294,11 +317,13 @@ function LevantamentoInner() {
 
       <div className="mx-auto max-w-7xl space-y-4 p-4">
         {/* KPI CARDS */}
+        <TooltipProvider delayDuration={200}>
         <div className="grid gap-3 md:grid-cols-4 lg:grid-cols-6">
           <Kpi
             title="Certames totais"
             value={kpis.total}
             icon={<Layers />}
+            help="Todos os certames cadastrados (CP + PS), incluindo arquivados."
             onClick={() => setDrill({ title: "Certames totais", items: certames })}
           />
           <Kpi
@@ -306,6 +331,7 @@ function LevantamentoInner() {
             value={kpis.ativos}
             icon={<CheckCircle2 />}
             tone="ok"
+            help="Certames vigentes ou em andamento — não encerrados, não cancelados e não arquivados."
             onClick={() =>
               setDrill({
                 title: "Certames ativos",
@@ -322,6 +348,7 @@ function LevantamentoInner() {
             title="Encerrados"
             value={kpis.encerrados}
             icon={<Archive />}
+            help="Certames com situação = Encerrado."
             onClick={() =>
               setDrill({
                 title: "Certames encerrados",
@@ -334,6 +361,7 @@ function LevantamentoInner() {
             value={kpis.proximoVenc}
             icon={<AlertTriangle />}
             tone="warn"
+            help="Certames marcados com situação 'próximo do vencimento'."
             onClick={() =>
               setDrill({
                 title: "Próximos do vencimento",
@@ -345,6 +373,7 @@ function LevantamentoInner() {
             title="Vagas autorizadas"
             value={kpis.vagas}
             icon={<Building2 />}
+            help="Soma de 'total_disponivel' de todos os certames."
             onClick={() =>
               setDrill({
                 title: "Certames com vagas autorizadas",
@@ -357,11 +386,13 @@ function LevantamentoInner() {
             value={fmtBRL(kpis.impactoAnual)}
             icon={<Coins />}
             tone="warn"
+            help="Estimativa: vagas × salário médio × encargos × 12 meses."
           />
           <Kpi
             title="Aprovados"
             value={kpis.aprovados}
             icon={<TrendingUp />}
+            help="Soma da coluna 'qtd_aprovados' em todos os certames."
             onClick={() =>
               setDrill({
                 title: "Certames com aprovados",
@@ -374,6 +405,7 @@ function LevantamentoInner() {
             value={kpis.atendidas}
             icon={<CheckCircle2 />}
             tone="ok"
+            help="Vagas já preenchidas por candidatos convocados."
             onClick={() =>
               setDrill({
                 title: "Certames com vagas atendidas",
@@ -385,6 +417,7 @@ function LevantamentoInner() {
             title="Vagas disponíveis"
             value={kpis.disponiveis}
             icon={<Building2 />}
+            help="Vagas autorizadas menos as atendidas."
             onClick={() =>
               setDrill({
                 title: "Certames com vagas disponíveis",
@@ -398,6 +431,7 @@ function LevantamentoInner() {
             title="Pedidos abertos"
             value={kpis.pedidosAbertos}
             icon={<Clock />}
+            help="Convocações formalmente pedidas mas ainda não iniciadas."
             onClick={() =>
               setDrill({
                 title: "Certames com pedidos abertos",
@@ -409,6 +443,7 @@ function LevantamentoInner() {
             title="Em andamento"
             value={kpis.pedidosAndamento}
             icon={<Clock />}
+            help="Convocações em processo de posse/nomeação."
             onClick={() =>
               setDrill({
                 title: "Certames com pedidos em andamento",
@@ -421,6 +456,7 @@ function LevantamentoInner() {
             value={kpis.desist}
             icon={<AlertTriangle />}
             tone="warn"
+            help="Candidatos que desistiram ou renunciaram após convocação."
             onClick={() =>
               setDrill({
                 title: "Certames com desistências/renúncias",
@@ -431,8 +467,9 @@ function LevantamentoInner() {
             }
           />
         </div>
+        </TooltipProvider>
 
-        <Tabs defaultValue="dashboard">
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="flex flex-wrap gap-1">
             <TabsTrigger value="dashboard">
               <BarChart3 className="mr-1 h-4 w-4" />
@@ -502,6 +539,46 @@ function LevantamentoInner() {
         cargoFilaId={cargoFilaSel}
         onClose={() => setCargoFilaSel(null)}
       />
+
+      {novoOpen && (
+        <EditDialog
+          certame={{
+            id: "",
+            tipo: "CP",
+            cargo: "",
+            numero: null,
+            ano: new Date().getFullYear(),
+            secretaria: null,
+            orgao: null,
+            homologacao_status: null,
+            prova_pratica: null,
+            qtd_aprovados: 0,
+            data_homologacao: null,
+            vencimento: null,
+            prorrogacao: null,
+            total_disponivel: 0,
+            regularizar: null,
+            pedidos_abertos: 0,
+            pedidos_andamento: 0,
+            memo: null,
+            qtd_atendida: 0,
+            desistencias_renuncias: 0,
+            situacao: "planejado",
+            observacoes: null,
+            arquivado: false,
+            importacao_id: null,
+            row_hash: null,
+            created_at: "",
+            updated_at: "",
+          }}
+          onClose={() => setNovoOpen(false)}
+          onSaved={() => {
+            setNovoOpen(false);
+            refetch();
+            setTab("certames");
+          }}
+        />
+      )}
     </div>
   );
 }
