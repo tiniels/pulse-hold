@@ -273,6 +273,7 @@ export function CargosDashboard() {
                           <div className="text-[10px] text-muted-foreground">
                             {l.nivel ?? "—"} · {l.jornada ?? "—"}
                             {l.salario_base != null && <> · {fmtBRL(l.salario_base)}</>}
+                            {l.variantes > 1 && <> · {l.variantes} variantes de cargo</>}
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{l.grupo_nome ?? "—"}</TableCell>

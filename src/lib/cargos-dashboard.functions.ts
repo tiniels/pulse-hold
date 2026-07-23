@@ -4,14 +4,20 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * Cargo-first dashboard for /admissao.
- * Todas as métricas são projetadas a partir de dim_cargo (SSOT).
- * Registros sem cargo canônico aparecem no bucket `NAO_CLASSIFICADOS`.
+ *
+ * IMPORTANTE — realidade dos dados atuais:
+ * Os aliases de cargo resolvidos hoje apontam apenas para `grupo_cargo_id`
+ * (nenhum registro de admissao/rescisao tem `cargo_id` populado). Portanto,
+ * a granularidade real das movimentações é o GRUPO DE CARGO (ex.: "Oficial
+ * Administrativo"). Para não exibir zero em todos os cargos, agregamos por
+ * grupo_cargo_id, que corresponde ao "cargo" que o gestor reconhece.
+ * Registros sem classificação alguma aparecem no bucket `NAO_CLASSIFICADOS`.
  */
 
 export const CARGO_UNKNOWN_ID = "__nao_classificados__";
 
 export type CargoLinha = {
-  cargo_id: string; // pode ser CARGO_UNKNOWN_ID
+  cargo_id: string; // = grupo_cargo_id (chave de agregação) OU CARGO_UNKNOWN_ID
   nome: string;
   grupo_cargo_id: string | null;
   grupo_nome: string | null;
@@ -21,6 +27,7 @@ export type CargoLinha = {
   jornada: string | null;
   salario_base: number | null;
   ativo: boolean;
+  variantes: number; // nº de cargos canônicos dentro do grupo
   entradas: number;
   saidas: number;
   saldo: number;
@@ -79,20 +86,84 @@ export const listCargosDashboard = createServerFn({ method: "POST" })
     const grupoNome = new Map<string, string>((gruposRes.data ?? []).map((g: any) => [g.id, g.nome]));
     const vincNome = new Map<string, string>((vinculosRes.data ?? []).map((v: any) => [v.id, v.nome]));
 
-    const quadroPorCargo = new Map<string, number>();
+    // Índice: cargo_id -> grupo_cargo_id (para mapear quadro autorizado e outros lookups)
+    const cargoToGrupo = new Map<string, string | null>();
+    // Resumo por grupo_cargo_id do conjunto de cargos canônicos filhos
+    type GrupoResumo = {
+      grupo_cargo_id: string;
+      cargos: any[];
+      vinculos: Set<string>;
+      niveis: Set<string>;
+      jornadas: Set<string>;
+      salarioMin: number | null;
+      salarioMax: number | null;
+      qualquerAtivo: boolean;
+    };
+    const grupoResumo = new Map<string, GrupoResumo>();
+    for (const c of cargosRes.data ?? []) {
+      cargoToGrupo.set(c.id, c.grupo_cargo_id ?? null);
+      if (!c.grupo_cargo_id) continue;
+      let g = grupoResumo.get(c.grupo_cargo_id);
+      if (!g) {
+        g = {
+          grupo_cargo_id: c.grupo_cargo_id,
+          cargos: [],
+          vinculos: new Set(),
+          niveis: new Set(),
+          jornadas: new Set(),
+          salarioMin: null,
+          salarioMax: null,
+          qualquerAtivo: false,
+        };
+        grupoResumo.set(c.grupo_cargo_id, g);
+      }
+      g.cargos.push(c);
+      if (c.vinculo_id) {
+        const vn = vincNome.get(c.vinculo_id);
+        if (vn) g.vinculos.add(vn);
+      }
+      if (c.nivel) g.niveis.add(c.nivel);
+      if (c.jornada) g.jornadas.add(c.jornada);
+      if (c.salario_base != null) {
+        const v = Number(c.salario_base);
+        g.salarioMin = g.salarioMin == null ? v : Math.min(g.salarioMin, v);
+        g.salarioMax = g.salarioMax == null ? v : Math.max(g.salarioMax, v);
+      }
+      if (c.ativo) g.qualquerAtivo = true;
+    }
+    // Garante que todo grupo do dim_grupo_cargo tenha entrada (mesmo sem cargos filhos)
+    for (const g of gruposRes.data ?? []) {
+      if (!grupoResumo.has(g.id)) {
+        grupoResumo.set(g.id, {
+          grupo_cargo_id: g.id,
+          cargos: [],
+          vinculos: new Set(),
+          niveis: new Set(),
+          jornadas: new Set(),
+          salarioMin: null,
+          salarioMax: null,
+          qualquerAtivo: true,
+        });
+      }
+    }
+
+    // Quadro autorizado é registrado por cargo_id → agregamos para o grupo
+    const quadroPorGrupo = new Map<string, number>();
     const today = new Date().toISOString().slice(0, 10);
     for (const q of quadroRes.data ?? []) {
       if (q.vigencia_fim && q.vigencia_fim < today) continue;
       if (q.vigencia_inicio && q.vigencia_inicio > today) continue;
-      quadroPorCargo.set(q.cargo_id, (quadroPorCargo.get(q.cargo_id) ?? 0) + (q.quantidade_autorizada ?? 0));
+      const gid = cargoToGrupo.get(q.cargo_id) ?? null;
+      if (!gid) continue;
+      quadroPorGrupo.set(gid, (quadroPorGrupo.get(gid) ?? 0) + (q.quantidade_autorizada ?? 0));
     }
 
-    // Admissoes (todo período para "última admissão"), + admissoes no período
+    // Admissoes/Rescisoes — agregamos por grupo_cargo_id (chave real da classificação)
     const admRows = await pageAll<any>(supabase, (from, to) =>
-      supabase.from("admissoes").select("id,cargo_id,data_efetiva").not("data_efetiva", "is", null).range(from, to),
+      supabase.from("admissoes").select("id,grupo_cargo_id,data_efetiva").not("data_efetiva", "is", null).range(from, to),
     );
     const resRows = await pageAll<any>(supabase, (from, to) =>
-      supabase.from("rescisoes").select("id,cargo_id,data_rescisao,data_admissao").not("data_rescisao", "is", null).range(from, to),
+      supabase.from("rescisoes").select("id,grupo_cargo_id,data_rescisao,data_admissao").not("data_rescisao", "is", null).range(from, to),
     );
 
     type Agg = {
@@ -105,11 +176,11 @@ export const listCargosDashboard = createServerFn({ method: "POST" })
       serie: Map<string, { entradas: number; saidas: number }>;
     };
     const mk = (): Agg => ({ entradas: 0, saidas: 0, ultimaAdm: null, ultimaRes: null, diasSum: 0, diasN: 0, serie: new Map() });
-    const byCargo = new Map<string, Agg>();
+    const byGrupo = new Map<string, Agg>();
     const ensure = (id: string | null | undefined): Agg => {
       const k = id ?? CARGO_UNKNOWN_ID;
-      let a = byCargo.get(k);
-      if (!a) { a = mk(); byCargo.set(k, a); }
+      let a = byGrupo.get(k);
+      if (!a) { a = mk(); byGrupo.set(k, a); }
       return a;
     };
     const bumpSerie = (a: Agg, mes: string, key: "entradas" | "saidas") => {
@@ -125,7 +196,7 @@ export const listCargosDashboard = createServerFn({ method: "POST" })
     };
 
     for (const r of admRows) {
-      const a = ensure(r.cargo_id);
+      const a = ensure(r.grupo_cargo_id);
       if (!a.ultimaAdm || (r.data_efetiva && r.data_efetiva > a.ultimaAdm)) a.ultimaAdm = r.data_efetiva;
       if (inRange(r.data_efetiva)) {
         a.entradas++;
@@ -133,7 +204,7 @@ export const listCargosDashboard = createServerFn({ method: "POST" })
       }
     }
     for (const r of resRows) {
-      const a = ensure(r.cargo_id);
+      const a = ensure(r.grupo_cargo_id);
       if (!a.ultimaRes || (r.data_rescisao && r.data_rescisao > a.ultimaRes)) a.ultimaRes = r.data_rescisao;
       if (inRange(r.data_rescisao)) {
         a.saidas++;
@@ -149,22 +220,37 @@ export const listCargosDashboard = createServerFn({ method: "POST" })
     const MS_12M = 365 * 86400 * 1000;
 
     const linhas: CargoLinha[] = [];
-    // 1) cargos canônicos
-    for (const c of cargosRes.data ?? []) {
-      const a = byCargo.get(c.id) ?? mk();
+    // 1) uma linha por grupo canônico (granularidade real dos dados)
+    for (const [gid, resumo] of grupoResumo.entries()) {
+      const a = byGrupo.get(gid) ?? mk();
       const ultima = pickLatest(a.ultimaAdm, a.ultimaRes);
-      const quadro = quadroPorCargo.get(c.id) ?? null;
+      const quadro = quadroPorGrupo.get(gid) ?? null;
+      const salario =
+        resumo.salarioMin != null && resumo.salarioMax != null && resumo.salarioMin !== resumo.salarioMax
+          ? resumo.salarioMin // exibe menor; UI pode formatar como faixa
+          : resumo.salarioMin;
+      const nomeGrupo = grupoNome.get(gid) ?? "—";
+      const vinculoLabel = resumo.vinculos.size === 1
+        ? Array.from(resumo.vinculos)[0]
+        : resumo.vinculos.size > 1 ? `${resumo.vinculos.size} vínculos` : null;
+      const nivelLabel = resumo.niveis.size === 1
+        ? Array.from(resumo.niveis)[0]
+        : resumo.niveis.size > 1 ? "Múltiplos" : null;
+      const jornadaLabel = resumo.jornadas.size === 1
+        ? Array.from(resumo.jornadas)[0]
+        : resumo.jornadas.size > 1 ? "Múltiplas" : null;
       linhas.push({
-        cargo_id: c.id,
-        nome: c.nome,
-        grupo_cargo_id: c.grupo_cargo_id,
-        grupo_nome: c.grupo_cargo_id ? grupoNome.get(c.grupo_cargo_id) ?? null : null,
-        vinculo_id: c.vinculo_id,
-        vinculo_nome: c.vinculo_id ? vincNome.get(c.vinculo_id) ?? null : null,
-        nivel: c.nivel ?? null,
-        jornada: c.jornada ?? null,
-        salario_base: c.salario_base != null ? Number(c.salario_base) : null,
-        ativo: !!c.ativo,
+        cargo_id: gid, // chave usada pela UI para drill-down (é o grupo_cargo_id)
+        nome: nomeGrupo,
+        grupo_cargo_id: gid,
+        grupo_nome: nomeGrupo,
+        vinculo_id: null,
+        vinculo_nome: vinculoLabel,
+        nivel: nivelLabel,
+        jornada: jornadaLabel,
+        salario_base: salario,
+        ativo: resumo.qualquerAtivo,
+        variantes: resumo.cargos.length,
         entradas: a.entradas,
         saidas: a.saidas,
         saldo: a.entradas - a.saidas,
@@ -180,7 +266,7 @@ export const listCargosDashboard = createServerFn({ method: "POST" })
       });
     }
     // 2) bucket "Não classificados"
-    const naoClass = byCargo.get(CARGO_UNKNOWN_ID);
+    const naoClass = byGrupo.get(CARGO_UNKNOWN_ID);
     if (naoClass && (naoClass.entradas + naoClass.saidas) > 0) {
       const ultima = pickLatest(naoClass.ultimaAdm, naoClass.ultimaRes);
       linhas.push({
@@ -194,6 +280,7 @@ export const listCargosDashboard = createServerFn({ method: "POST" })
         jornada: null,
         salario_base: null,
         ativo: true,
+        variantes: 0,
         entradas: naoClass.entradas,
         saidas: naoClass.saidas,
         saldo: naoClass.entradas - naoClass.saidas,
@@ -263,11 +350,20 @@ export const getCargoDetalhe = createServerFn({ method: "POST" })
     const supabase = context.supabase as any;
     const isUnknown = data.cargo_id === CARGO_UNKNOWN_ID;
 
+    // A UI passa o grupo_cargo_id como "cargo_id" (a granularidade real
+    // dos dados). Buscamos o nome no dim_grupo_cargo e a lista de cargos
+    // canônicos filhos para vincular certames.
     let cargoNome = "Não classificados";
+    let cargoIdsDoGrupo: string[] = [];
     if (!isUnknown) {
-      const { data: c, error } = await supabase.from("dim_cargo").select("nome").eq("id", data.cargo_id).maybeSingle();
-      if (error) throwSafe(error);
-      cargoNome = c?.nome ?? "—";
+      const [gRes, cRes] = await Promise.all([
+        supabase.from("dim_grupo_cargo").select("nome").eq("id", data.cargo_id).maybeSingle(),
+        supabase.from("dim_cargo").select("id").eq("grupo_cargo_id", data.cargo_id),
+      ]);
+      if (gRes.error) throwSafe(gRes.error);
+      if (cRes.error) throwSafe(cRes.error);
+      cargoNome = gRes.data?.nome ?? "—";
+      cargoIdsDoGrupo = (cRes.data ?? []).map((r: any) => r.id);
     }
 
     const [secDim, motDim] = await Promise.all([
@@ -281,8 +377,8 @@ export const getCargoDetalhe = createServerFn({ method: "POST" })
 
     const admQ = supabase.from("admissoes").select("nome,prontuario,data_efetiva,secretaria_id").not("data_efetiva", "is", null);
     const resQ = supabase.from("rescisoes").select("nome,matricula,data_rescisao,secretaria_id,motivo_id").not("data_rescisao", "is", null);
-    const adm = isUnknown ? admQ.is("cargo_id", null) : admQ.eq("cargo_id", data.cargo_id);
-    const res = isUnknown ? resQ.is("cargo_id", null) : resQ.eq("cargo_id", data.cargo_id);
+    const adm = isUnknown ? admQ.is("grupo_cargo_id", null) : admQ.eq("grupo_cargo_id", data.cargo_id);
+    const res = isUnknown ? resQ.is("grupo_cargo_id", null) : resQ.eq("grupo_cargo_id", data.cargo_id);
     if (data.fromISO) { adm.gte("data_efetiva", data.fromISO); res.gte("data_rescisao", data.fromISO); }
     if (data.toISO) { adm.lte("data_efetiva", data.toISO); res.lte("data_rescisao", data.toISO); }
     const [admRes, resRes] = await Promise.all([adm.order("data_efetiva", { ascending: false }), res.order("data_rescisao", { ascending: false })]);
@@ -325,11 +421,11 @@ export const getCargoDetalhe = createServerFn({ method: "POST" })
 
     // certames vinculados
     let certames: CargoDetalhe["certames"] = [];
-    if (!isUnknown) {
+    if (!isUnknown && cargoIdsDoGrupo.length > 0) {
       const { data: cs, error: cErr } = await supabase
         .from("lev_certames")
         .select("id,tipo,numero,ano,situacao,qtd_aprovados,total_disponivel,vencimento")
-        .eq("cargo_id", data.cargo_id)
+        .in("cargo_id", cargoIdsDoGrupo)
         .order("vencimento", { ascending: true, nullsFirst: false })
         .limit(50);
       if (cErr) throwSafe(cErr);
