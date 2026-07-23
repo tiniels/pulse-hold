@@ -123,6 +123,39 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhes: Json | null
+          entidade: string
+          filtros: Json | null
+          id: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhes?: Json | null
+          entidade: string
+          filtros?: Json | null
+          id?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhes?: Json | null
+          entidade?: string
+          filtros?: Json | null
+          id?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       candidatos: {
         Row: {
           cargo_fila_id: string

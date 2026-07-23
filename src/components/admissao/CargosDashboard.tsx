@@ -27,8 +27,16 @@ import {
 } from "@/components/ui/tooltip";
 import {
   Search, Download, ArrowUpDown, TrendingUp, TrendingDown, Circle,
-  Briefcase, ChevronRight, Info,
+  Briefcase, ChevronRight, Info, AlertTriangle, AlertOctagon, CheckCircle2,
+  PauseCircle, MinusCircle, FileSpreadsheet, FileText, FileDown, Clock,
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { exportCSV, exportPDF, exportXLSX, type ExportMeta } from "@/lib/admissao-export";
+import { logAudit } from "@/lib/audit.functions";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
   CartesianGrid, BarChart, Bar, Legend,
@@ -52,40 +60,23 @@ function saldoTone(s: number): string {
   if (s < 0) return "text-rose-600";
   return "text-muted-foreground";
 }
-function semaforo(l: CargoLinha): { label: string; className: string; hint: string } {
-  if (!l.ativo) return { label: "Inativo", className: "bg-slate-200 text-slate-600", hint: "Cargo marcado como inativo no MDM." };
-  if (l.sem_movimento) return { label: "Sem mov. 12m", className: "bg-slate-100 text-slate-700 border", hint: "Nenhuma admissão ou desligamento nos últimos 12 meses." };
-  if (l.cobertura_pct != null && l.cobertura_pct < 50) return { label: "Cobertura crítica", className: "bg-rose-100 text-rose-700 border border-rose-300", hint: "Entradas no período < 50% do quadro autorizado." };
-  if (l.taxa_saida_pct != null && l.taxa_saida_pct > 60) return { label: "Alta rotatividade", className: "bg-amber-100 text-amber-800 border border-amber-300", hint: "Mais de 60% das movimentações no período são saídas." };
-  if (l.saldo < 0) return { label: "Déficit", className: "bg-rose-50 text-rose-700 border border-rose-200", hint: "Saídas superam entradas no período." };
-  if (l.saldo > 0) return { label: "Superávit", className: "bg-emerald-50 text-emerald-700 border border-emerald-200", hint: "Entradas superam saídas no período." };
-  return { label: "Estável", className: "bg-slate-50 text-slate-600 border", hint: "Movimentação equilibrada no período." };
+type SemStatus = {
+  label: string; className: string; hint: string;
+  Icon: React.ComponentType<{ className?: string }>;
+};
+function semaforo(l: CargoLinha): SemStatus {
+  if (!l.ativo) return { label: "Inativo", className: "bg-slate-200 text-slate-700 border border-slate-300", hint: "Cargo marcado como inativo no MDM.", Icon: PauseCircle };
+  if (l.sem_movimento) return { label: "Sem mov. 12m", className: "bg-slate-100 text-slate-700 border border-slate-300", hint: "Nenhuma admissão ou desligamento nos últimos 12 meses.", Icon: MinusCircle };
+  if (l.cobertura_pct != null && l.cobertura_pct < 50) return { label: "Cobertura crítica", className: "bg-rose-100 text-rose-800 border border-rose-300", hint: "Entradas no período < 50% do quadro autorizado.", Icon: AlertOctagon };
+  if (l.taxa_saida_pct != null && l.taxa_saida_pct > 60) return { label: "Alta rotatividade", className: "bg-amber-100 text-amber-900 border border-amber-300", hint: "Mais de 60% das movimentações no período são saídas.", Icon: AlertTriangle };
+  if (l.saldo < 0) return { label: "Déficit", className: "bg-rose-50 text-rose-800 border border-rose-200", hint: "Saídas superam entradas no período.", Icon: TrendingDown };
+  if (l.saldo > 0) return { label: "Superávit", className: "bg-emerald-50 text-emerald-800 border border-emerald-200", hint: "Entradas superam saídas no período.", Icon: TrendingUp };
+  return { label: "Estável", className: "bg-slate-50 text-slate-700 border border-slate-200", hint: "Movimentação equilibrada no período.", Icon: CheckCircle2 };
 }
 
-function toCSV(rows: CargoLinha[]): string {
-  const head = [
-    "cargo", "grupo", "vinculo", "nivel", "jornada", "ativo",
-    "entradas", "saidas", "saldo", "taxa_saida_pct", "dias_medios_casa",
-    "ultima_admissao", "ultima_rescisao", "quadro_autorizado", "cobertura_pct", "salario_base",
-  ];
-  const esc = (v: unknown) => {
-    const s = v == null ? "" : String(v);
-    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const lines = [head.join(";")];
-  for (const l of rows) {
-    lines.push([
-      l.nome, l.grupo_nome ?? "", l.vinculo_nome ?? "", l.nivel ?? "", l.jornada ?? "", l.ativo ? "sim" : "não",
-      l.entradas, l.saidas, l.saldo,
-      l.taxa_saida_pct?.toFixed(1) ?? "",
-      l.dias_medios_casa ?? "",
-      l.ultima_admissao ?? "", l.ultima_rescisao ?? "",
-      l.quadro_autorizado ?? "",
-      l.cobertura_pct?.toFixed(1) ?? "",
-      l.salario_base ?? "",
-    ].map(esc).join(";"));
-  }
-  return lines.join("\n");
+function fmtDateTimeBR(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
 export function CargosDashboard() {
@@ -184,14 +175,73 @@ export function CargosDashboard() {
     else { setSortKey(k); setSortDir(k === "nome" || k === "grupo" || k === "vinculo" ? "asc" : "desc"); }
   };
 
-  const download = () => {
-    const blob = new Blob(["\uFEFF" + toCSV(sorted)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `cargos-${fromISO ?? "inicio"}-${toISO ?? "hoje"}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const ultimaAtualizacaoFontes = useMemo(() => {
+    let m: string | null = null;
+    for (const l of data.linhas) {
+      const v = l.ultima_movimentacao;
+      if (v && (!m || v > m)) m = v;
+    }
+    return m;
+  }, [data.linhas]);
+
+  const buildMeta = (): ExportMeta => ({
+    periodo: { fromISO: fromISO ?? null, toISO: toISO ?? null },
+    filtros: {
+      ...(q ? { busca: q } : {}),
+      ...(grupoF !== "_all" ? { grupo: grupoF } : {}),
+      ...(vincF !== "_all" ? { vinculo: vincF } : {}),
+      ...(nivelF !== "_all" ? { nivel: nivelF } : {}),
+      ...(jornadaF !== "_all" ? { jornada: jornadaF } : {}),
+      status: statusF,
+    },
+    extraidoEm: new Date().toISOString(),
+    fonte: "dim_cargo (MDM) + admissoes + rescisoes + dim_quadro_autorizado",
+    metodologia:
+      "Entradas e saídas contabilizadas pelo cargo_id do MDM no período selecionado. " +
+      "Saldo = entradas − saídas. Taxa de saída = saídas / (entradas + saídas). " +
+      "Cobertura = entradas / quadro autorizado. Cargos sem cargo_id são apresentados no bloco 'Não classificados'.",
+    observacoes: [
+      ...(data.totalNaoClassificados > 0
+        ? [`${data.totalNaoClassificados} movimentações sem classificação canônica (grupo/cargo) — revisar em /mdm.`]
+        : []),
+      ...(ultimaAtualizacaoFontes ? [] : ["Nenhuma movimentação registrada no recorte."]),
+    ],
+    totais: {
+      cargos: totalKPI.cargos,
+      entradas: totalKPI.entradas,
+      saidas: totalKPI.saidas,
+      saldo: totalKPI.saldo,
+      naoClassificados: data.totalNaoClassificados,
+    },
+    ultimaAtualizacaoFontes,
+  });
+
+  const callAudit = useServerFn(logAudit);
+  const runExport = async (formato: "csv" | "xlsx" | "pdf") => {
+    const meta = buildMeta();
+    const base = `cargos-${fromISO ?? "inicio"}-${toISO ?? "hoje"}`;
+    try {
+      if (formato === "csv") exportCSV(sorted, meta, `${base}.csv`);
+      else if (formato === "xlsx") await exportXLSX(sorted, meta, `${base}.xlsx`);
+      else await exportPDF(sorted, meta, `${base}.pdf`);
+      toast.success(`Exportação ${formato.toUpperCase()} concluída`);
+    } catch (e: any) {
+      toast.error(`Falha ao gerar ${formato.toUpperCase()}`, { description: e?.message });
+      return;
+    }
+    // Best-effort audit; do not block user
+    void callAudit({
+      data: {
+        acao: `export_${formato}`,
+        entidade: "admissao.cargos_dashboard",
+        filtros: meta.filtros,
+        detalhes: {
+          periodo: meta.periodo,
+          totais: meta.totais,
+          linhas_exportadas: sorted.length,
+        },
+      },
+    }).catch(() => {});
   };
 
   return (
@@ -225,10 +275,39 @@ export function CargosDashboard() {
             </SelectContent>
           </Select>
           <div className="ml-auto flex items-center gap-2">
+            <Badge variant="outline" className="gap-1 text-[10px] font-normal" title="Data da movimentação mais recente considerada no recorte">
+              <Clock className="h-3 w-3" aria-hidden />
+              <span className="sr-only">Última atualização das fontes: </span>
+              {fmtDateTimeBR(ultimaAtualizacaoFontes)}
+            </Badge>
             <Badge variant="secondary" className="text-xs">
               {data.totalNaoClassificados > 0 ? `${data.totalNaoClassificados} movimentações não classificadas` : "100% classificado"}
             </Badge>
-            <Button variant="outline" size="sm" onClick={download}><Download className="mr-1 h-3.5 w-3.5" /> CSV</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" aria-label="Exportar grade de cargos">
+                  <Download className="mr-1 h-3.5 w-3.5" /> Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Formato do relatório
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => runExport("xlsx")}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" aria-hidden />
+                  Excel estruturado (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => runExport("pdf")}>
+                  <FileText className="mr-2 h-4 w-4 text-rose-600" aria-hidden />
+                  PDF executivo (.pdf)
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => runExport("csv")}>
+                  <FileDown className="mr-2 h-4 w-4 text-slate-600" aria-hidden />
+                  CSV bruto (.csv)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardContent>
       </Card>
@@ -266,8 +345,19 @@ export function CargosDashboard() {
                 <TableBody>
                   {sorted.map((l) => {
                     const sem = semaforo(l);
+                    const open = () => setOpenCargo({ id: l.cargo_id, nome: l.nome });
                     return (
-                      <TableRow key={l.cargo_id} className="cursor-pointer hover:bg-muted/50" onClick={() => setOpenCargo({ id: l.cargo_id, nome: l.nome })}>
+                      <TableRow
+                        key={l.cargo_id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Abrir detalhes de ${l.nome}. Status: ${sem.label}. Entradas ${l.entradas}, saídas ${l.saidas}, saldo ${l.saldo}.`}
+                        className="cursor-pointer outline-none hover:bg-muted/50 focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-primary/60"
+                        onClick={open}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+                        }}
+                      >
                         <TableCell className="max-w-[280px]">
                           <div className="font-medium leading-tight">{l.nome}</div>
                           <div className="text-[10px] text-muted-foreground">
@@ -281,7 +371,10 @@ export function CargosDashboard() {
                         <TableCell>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] ${sem.className}`}>{sem.label}</span>
+                              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${sem.className}`}>
+                                <sem.Icon className="h-3 w-3" aria-hidden />
+                                {sem.label}
+                              </span>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs text-xs">{sem.hint}</TooltipContent>
                           </Tooltip>
