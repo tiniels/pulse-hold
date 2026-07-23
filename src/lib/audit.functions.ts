@@ -22,9 +22,9 @@ export const logAudit = createServerFn({ method: "POST" })
         user_email: (context.claims as any)?.email ?? null,
         acao: data.acao,
         entidade: data.entidade,
-        filtros: data.filtros ?? null,
-        detalhes: data.detalhes ?? null,
-      });
+        filtros: (data.filtros ?? null) as any,
+        detalhes: (data.detalhes ?? null) as any,
+      } as any);
     } catch {
       /* best-effort logging */
     }
